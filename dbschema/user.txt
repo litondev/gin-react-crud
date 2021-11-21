@@ -1,0 +1,18 @@
+- id
+ - bigInteger
+
+- name 
+ - varchar(25)
+
+- email
+ - varchar(25)
+
+- password
+ - text
+
+- photo
+ - varchar(50)
+
+- created_at
+- updated_at
+

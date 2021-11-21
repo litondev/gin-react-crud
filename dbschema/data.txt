@@ -1,0 +1,12 @@
+- id
+ - bigInteger
+
+- nama
+ - varchar(25)
+
+- phone
+ - varchar(25)
+
+- created_at
+- updated_at
+

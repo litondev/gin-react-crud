@@ -1,0 +1,25 @@
+github.com/joho/godotenv // dotenv
+
+github.com/appleboy/gin-jwt/v2 // jwt for stateless app
+
+github.com/codegangsta/gin // hot change for file
+
+github.com/jinzhu/gorm // orm
+
+gorm.io/driver/mysql // mysql driver for orm
+
+gorm.io/driver/postgres // postgres driver for orm
+
+github.com/gorilla/sessions // session
+
+github.com/utrack/gin-csrf // csrf
+
+go get github.com/xuri/excelize/v2 // excel file
+
+go get github.com/jung-kurt/gofpdf // pdf file
+
+go get github.com/kofoworola/godate // carbon
+
+go get gopkg.in/gomail.v2 // email
+
+go get -u github.com/disintegration/imaging // image manipulation
