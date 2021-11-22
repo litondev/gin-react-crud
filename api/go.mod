@@ -8,6 +8,7 @@ require (
 	github.com/codegangsta/envy v0.0.0-20141216192214-4b78388c8ce4 // indirect
 	github.com/codegangsta/gin v0.0.0-20211113050330-71f90109db02 // indirect
 	github.com/disintegration/imaging v1.6.2 // indirect
+	github.com/gin-contrib/cors v1.3.1 // indirect
 	github.com/gin-gonic/gin v1.7.4 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
@@ -26,4 +27,5 @@ require (
 	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
 	gorm.io/driver/mysql v1.1.0 // indirect
 	gorm.io/driver/postgres v1.2.2 // indirect
+	gorm.io/gorm v1.22.2 // indirect
 )

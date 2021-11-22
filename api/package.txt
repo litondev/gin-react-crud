@@ -4,7 +4,7 @@ github.com/appleboy/gin-jwt/v2 // jwt for stateless app
 
 github.com/codegangsta/gin // hot change for file
 
-github.com/jinzhu/gorm // orm
+github.com/jinzhu/gorm | gorm.io // orm
 
 gorm.io/driver/mysql // mysql driver for orm
 
@@ -23,3 +23,5 @@ go get github.com/kofoworola/godate // carbon
 go get gopkg.in/gomail.v2 // email
 
 go get -u github.com/disintegration/imaging // image manipulation
+
+go get github.com/gin-contrib/cors // cors

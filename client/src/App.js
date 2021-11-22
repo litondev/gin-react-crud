@@ -1,25 +1,26 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { BrowserRouter,Route,Routes } from "react-router-dom";
+import MyRoutes from "./routes/index.js";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+const App = () => {
+    return (        
+        <BrowserRouter>   
+          <React.Suspense fallback={ <span>Loading</span> }>    
+            <Routes>
+            {
+              MyRoutes.map((route,indexRoute) => {
+                return <Route
+                  path={ route.path }
+                  key={ indexRoute }
+                  element={
+                    <route.component/>                  
+                  } />
+              })
+            }           
+            </Routes>
+          </React.Suspense>
+        </BrowserRouter>
+    )
 }
 
 export default App;
