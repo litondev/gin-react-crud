@@ -1,0 +1,14 @@
+Name
+
+User_id
+
+Price
+ Numeric
+
+Type
+ Enum
+
+Stock
+ Integer
+
+Description
