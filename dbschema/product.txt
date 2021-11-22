@@ -1,14 +1,18 @@
 Name
+ varchar (25)
 
 User_id
+ bigInteger
 
 Price
- Numeric
+ numeric (20,2)
 
 Type
  Enum
+ On,Off
 
 Stock
- Integer
+ Integer 
 
 Description
+ text

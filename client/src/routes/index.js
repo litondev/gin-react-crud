@@ -18,6 +18,10 @@ const myRoutes = [
 		component : React.lazy(() => import('../views/Data'))
 	},
 	{
+		path : "/product",
+		component : React.lazy(() => import('../views/Product'))
+	},
+	{
 		path : '/profil',
 		component : React.lazy(() => import('../views/Profil'))
 	},
