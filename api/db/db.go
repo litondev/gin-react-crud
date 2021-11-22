@@ -25,8 +25,6 @@ func Database() *gorm.DB {
 		" port=" + os.Getenv("DB_PORT") +
 		" sslmode=disable TimeZone=Asia/Jakarta"
 
-	// fmt.Println(dsn)
-
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
