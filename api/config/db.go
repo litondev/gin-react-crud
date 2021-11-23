@@ -35,7 +35,7 @@ func Database() (*gorm.DB, error) {
 		// fmt.Println("Can't Connect To Database")
 		fmt.Println(err)
 		return nil, errors.New("Can't Connect To Database")
-		os.Exit(1)
+		// os.Exit(1)
 	}
 
 	return db, nil
