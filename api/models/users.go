@@ -7,7 +7,7 @@ type User struct {
 	Name      string `gorm:"size:25"`
 	Email     string `gorm:"unique;size:25"`
 	Password  string `gorm:"type:text"`
-	Photo     string `gorm:"size:25"`
+	Photo     string `gorm:"size:25;default=null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

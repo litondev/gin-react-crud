@@ -2,48 +2,94 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
 
-	"github.com/litondev/gin-react-crud/api/db"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	database := db.Database()
+	// load env file
+	err := godotenv.Load()
 
-	if database == nil {
-		fmt.Println("Database Not Connected")
+	// check is not an error
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
-	fmt.Println("Database Connect")
+	// get debug mode
+	debug := os.Getenv("APP_DEBUG")
+	appDebug, err := strconv.ParseBool(debug)
+
+	// check is not an error
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// check type data
+	// fmt.Println(reflect.TypeOf(test))
+	// fmt.Println(reflect.TypeOf(appDebug))
+
+	// set debug mode
+	if appDebug == true {
+		gin.SetMode("debug")
+	} else {
+		gin.SetMode("release")
+	}
+
+	// log console to file
+	// f, _ := os.Create("gin.log")
+	// gin.DefaultWriter = io.MultiWriter(f)
+
+	// intial gin
+	r := gin.Default()
+
+	// Cors Middleware
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{http.MethodGet, http.MethodPatch, http.MethodPost, http.MethodHead, http.MethodDelete, http.MethodOptions},
+		AllowHeaders:     []string{"Content-Type", "X-XSRF-TOKEN", "Accept", "Origin", "X-Requested-With", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
+
+	// When Unexpected Error Happend
+	r.Use(globalRecover)
+
+	/* Routes */
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(44, gin.H{
+			"message": "Hello",
+		})
+	})
+	/* Routes */
+
+	// running server
+	r.Run(os.Getenv("APP_HOST") + ":" + os.Getenv("APP_PORT"))
 }
 
-// func main() {
-// 	r := gin.Default()
+// When Unexpected Error Happend
+func globalRecover(c *gin.Context) {
+	defer func(c *gin.Context) {
+		if rec := recover(); rec != nil {
+			f, _ := os.OpenFile(os.Getenv("APP_LOGGER_LOCATION"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 
-// 	r.Use(cors.New(cors.Config{
-// 		AllowOrigins:     []string{"http://localhost:3000"},
-// 		AllowMethods:     []string{http.MethodGet, http.MethodPatch, http.MethodPost, http.MethodHead, http.MethodDelete, http.MethodOptions},
-// 		AllowHeaders:     []string{"Content-Type", "X-XSRF-TOKEN", "Accept", "Origin", "X-Requested-With", "Authorization"},
-// 		ExposeHeaders:    []string{"Content-Length"},
-// 		AllowCredentials: true,
-// 	}))
+			logger := log.New(f, "Error : ", log.LstdFlags)
 
-// 	r.GET("/", func(c *gin.Context) {
-// 		c.JSON(200, gin.H{
-// 			"message": "Hellos",
-// 		})
-// 	})
+			logger.Println(time.Now().String())
+			logger.Println(rec)
 
-// 	r.GET("/ping", func(c *gin.Context) {
-// 		c.JSON(200, gin.H{
-// 			"message": "pongs",
-// 		})
-// 	})
-
-// 	r.GET("/api/v1/p", func(c *gin.Context) {
-// 		c.JSON(200, gin.H{
-// 			"message": "Hellos",
-// 		})
-// 	})
-
-// 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
-// }
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Terjadi Kesalahan",
+			})
+		}
+	}(c)
+	c.Next()
+}

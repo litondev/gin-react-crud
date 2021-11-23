@@ -1,13 +1,12 @@
-package main
+package migration
 
 import (
-	datas "github.com/litondev/gin-react-crud/api/migration/datas"
-	products "github.com/litondev/gin-react-crud/api/migration/products"
-	users "github.com/litondev/gin-react-crud/api/migration/users"
+	"github.com/litondev/gin-react-crud/api/db"
 )
 
 func main() {
-	users.Migrate()
-	datas.Migrate()
-	products.Migrate()
+	database := db.Database()
+	database.AutoMigrate(&models.User{})
+	database.AutoMigrate(&models.Product{})
+	database.AutoMigrate(&models.Data{})
 }
