@@ -25,3 +25,5 @@ go get gopkg.in/gomail.v2 // email
 go get -u github.com/disintegration/imaging // image manipulation
 
 go get github.com/gin-contrib/cors // cors
+
+go get golang.org/x/crypto/bcrypt // bcrypt

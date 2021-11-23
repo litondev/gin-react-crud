@@ -21,9 +21,11 @@ require (
 	github.com/urfave/cli v1.22.5 // indirect
 	github.com/utrack/gin-csrf v0.0.0-20190424104817-40fb8d2c8fca // indirect
 	github.com/xuri/excelize/v2 v2.4.1 // indirect
+	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871 // indirect
 	golang.org/x/image v0.0.0-20211028202545-6944b10bf410 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df // indirect
+	gopkg.in/guregu/null.v4 v4.0.0 // indirect
 	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
 	gorm.io/driver/mysql v1.1.0 // indirect
 	gorm.io/driver/postgres v1.2.2 // indirect

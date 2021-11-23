@@ -2,29 +2,24 @@ package models
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type Product struct {
-	gorm.Model
-	// for User struct
+	ID   uint   `gorm:"primaryKey;autoIncrement"`
+	Name string `gorm:"size:25"`
 
-	ID     uint   `gorm:"primaryKey;autoIncrement"`
-	Name   string `gorm:"size:25"`
-	UserID uint   `gorm:"not null"`
-	IsGood bool   `gorm:"default=true"`
-	Price  int    `gorm:"default=0"`
+	UserID uint `gorm:"not null"`
+	// relasi dari tabel user
 
-	Type string `gorm:"size:25"`
+	IsGood bool `gorm:"default=true"`
+	Price  int  `gorm:"default=0"`
+
+	Type string `gorm:"size:25;default='on'"`
 	// type off and on
 	// postgres does have enum type
 
-	Stock       int    `gorm:"default=1"`
-	Description string `gorm:"type:text;default=null"`
-
-	User User
-	// foreign key
+	Stock       int     `gorm:"default=1"`
+	Description *string `gorm:"type:text"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

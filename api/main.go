@@ -51,6 +51,11 @@ func main() {
 	// intial gin
 	r := gin.Default()
 
+	// set static assets
+	r.Static("/assets", "./assets")
+	// try access
+	// http://localhost:8000/assets/images/logo.png
+
 	// Cors Middleware
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
@@ -65,7 +70,7 @@ func main() {
 
 	/* Routes */
 	r.GET("/", func(c *gin.Context) {
-		c.JSON(44, gin.H{
+		c.JSON(200, gin.H{
 			"message": "Hello",
 		})
 	})
