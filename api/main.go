@@ -87,7 +87,7 @@ func main() {
 
 		v1Auth := v1.Group("/auth")
 		{
-			v1Auth.GET("/signin",controllers.Signin)
+			v1Auth.POST("/signin",controllers.Signin)
 			v1Auth.GET("/signup",controllers.Signup)
 			v1Auth.GET("/forgot-password",controllers.ForgotPassword)
 		}

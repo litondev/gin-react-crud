@@ -1,6 +1,2 @@
-Error : 2021/11/23 11:27:56 2021-11-23 11:27:56.044360496 +0000 UTC m=+66.779648727
-Error : 2021/11/23 11:27:56 invalid WriteHeader code 44
-Error : 2021/11/23 11:28:51 2021-11-23 11:28:51.646959059 +0000 UTC m=+122.382247298
-Error : 2021/11/23 11:28:51 invalid WriteHeader code 44
-Error : 2021/11/26 09:20:36 2021-11-26 09:20:36.827631192 +0000 UTC m=+4.291045534
-Error : 2021/11/26 09:20:36 reflect: call of reflect.Value.MapKeys on slice Value
+Error : 2021/11/26 14:13:56 2021-11-26 14:13:56.083588238 +0000 UTC m=+14.007663982
+Error : 2021/11/26 14:13:56 json: unsupported type: func() time.Time
