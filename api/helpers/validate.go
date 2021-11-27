@@ -1,9 +1,11 @@
 package helpers
 
-import "github.com/gin-gonic/gin"
-import "errors"
-import "fmt"
-import "github.com/go-playground/validator/v10"
+import (
+		"github.com/gin-gonic/gin"
+		"errors"
+		// "fmt"
+		"github.com/go-playground/validator/v10"
+)
 		
 // 	errs := err.(validator.ValidationErrors)
 // 	for _, e := range errs {		
@@ -21,14 +23,13 @@ import "github.com/go-playground/validator/v10"
 // 	}
 
 func msgForTag(fe validator.FieldError) string {
-	fmt.Println(fe.Value())
 	switch fe.Tag() {
 	case "required":
 		return fe.Field() + " Harus Diisi"
 	case "email":
 		return "Invalid email"
 	}
-	return fe.Error() // default error
+	return fe.Error()
 }
 
 func Validate(c *gin.Context,validators interface{}) (error){

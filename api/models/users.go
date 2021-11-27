@@ -23,10 +23,10 @@ type User struct {
 	// admin,user
 
 	// Product   Product
-	// create has one relasi ke product
+	// membuat relasi has One ke table product
 
 	Product []Product
-	// create has many relasi ke product
+	// membuat relasi has Many ke table product
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

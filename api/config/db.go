@@ -1,6 +1,9 @@
 package config
 
-// package main
+// Untuk Mengeksekusi Package
+/*
+ package main
+*/
 
 import (
 	"errors"
@@ -13,13 +16,19 @@ import (
 )
 
 func Database() (*gorm.DB, error) {
+	// Load Dot Env
 	err := godotenv.Load()
 
+	// Check If Not Err
 	if err != nil {
-		// fmt.Println("Error loading .env file")
+		// Print Error
 		fmt.Println(err)
+		// Throw Error
 		return nil, errors.New("Error loading .env file")
-		// os.Exit(1)
+		// Exit Program
+		/*
+		 os.Exit(1)
+		*/
 	}
 
 	dsn := "host=" + os.Getenv("DB_HOST") +
@@ -32,21 +41,29 @@ func Database() (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		// fmt.Println("Can't Connect To Database")
+		// Print Error
 		fmt.Println(err)
+		// Throw Error
 		return nil, errors.New("Can't Connect To Database")
-		// os.Exit(1)
+		// Exit Program
+		/* 
+			os.Exit(1)
+		*/
 	}
 
+	// Return Gorm Orm
 	return db, nil
 }
 
-// func main() {
-// 	_, err := Database()
+// Check Db Koneksi
+/*
+func main() {
+	_, err := Database()
 
-// 	if err != nil {
-// 		fmt.Println("You are can't connect to database")
-// 	} else {
-// 		fmt.Println("You are connect to database")
-// 	}
-// }
+	if err != nil {
+		fmt.Println("You are can't connect to database")
+	} else {
+		fmt.Println("You are connect to database")
+	}
+}
+*/
