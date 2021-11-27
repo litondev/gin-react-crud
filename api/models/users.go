@@ -10,10 +10,11 @@ type User struct {
 	gorm.Model
 	// digunakan ketika membuat relasi
 
-	ID       uint   `gorm:"primaryKey;autoIncrement"`
-	Name     string `gorm:"size:25"`
-	Email    string `gorm:"unique;size:25"`
-	Password string `gorm:"type:text"`
+	ID            uint    `gorm:"primaryKey;autoIncrement"`
+	Name          string  `gorm:"size:25"`
+	Email         string  `gorm:"unique;size:25"`
+	Password      string  `gorm:"type:text"`
+	RememberToken *string `gorm:"type:text"`
 
 	Photo *string `gorm:"size:25"`
 	// *string membuat photo boleh null dan jika diakses gorm maka nilainya akan nil

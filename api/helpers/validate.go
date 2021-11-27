@@ -1,14 +1,23 @@
 package helpers
 
 import (
-		"github.com/gin-gonic/gin"
-		"errors"
-		// "fmt"
-		"github.com/go-playground/validator/v10"
+	"errors"
+
+	"github.com/gin-gonic/gin"
+
+	// "fmt"
+	"github.com/go-playground/validator/v10"
 )
-		
+
+/*
+	SANGAT PENTING JIKA MENGUNAKAN VALIDASI HARUS ADA BODYNYA JIKA PADA REQUEST CLIENT
+	JIKA TIDAK AKAN EFO ERROR
+
+	DAN JIKA ADA APPLICATION/JSONNYA MAKA JSON HARUS ADA ISINYA
+*/
+
 // 	errs := err.(validator.ValidationErrors)
-// 	for _, e := range errs {		
+// 	for _, e := range errs {
 // 		fmt.Println(e.Namespace())
 // 		fmt.Println(e.Field())
 // 		fmt.Println(e.StructNamespace())
@@ -32,11 +41,16 @@ func msgForTag(fe validator.FieldError) string {
 	return fe.Error()
 }
 
-func Validate(c *gin.Context,validators interface{}) (error){
+func Validate(c *gin.Context, validators interface{}) error {
 	if err := c.ShouldBind(validators); err != nil {
-		errs := err.(validator.ValidationErrors)
-		return errors.New(msgForTag(errs[0]))
+		if _, ok := err.(validator.FieldError); ok {
+			errs := err.(validator.ValidationErrors)
+			return errors.New(msgForTag(errs[0]))
+		} else {
+			// return errors.New(err.Error())
+			return errors.New("Terjadi Kesalahan")
+		}
 	}
 
-	return nil;
+	return nil
 }

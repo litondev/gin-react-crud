@@ -7,12 +7,13 @@ import (
 	"os"
 	"strconv"
 	"time"
+
 	// "reflect"
 
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/litondev/gin-react-crud/api/controllers"
 	// "github.com/litondev/gin-react-crud/api/models"
 	// "github.com/litondev/gin-react-crud/api/requests"
@@ -44,7 +45,6 @@ func main() {
 	 fmt.Println(reflect.TypeOf(appDebug))
 	*/
 
-
 	// set debug mode
 	if appDebug == true {
 		gin.SetMode("debug")
@@ -60,16 +60,16 @@ func main() {
 
 	// set jwt
 	authMiddleware, _ := jwt.New(&jwt.GinJWTMiddleware{
-		Realm:       "Dev",
-		Key:         []byte("secret"),
-		Timeout:     time.Hour,
-		MaxRefresh:  time.Hour,
-		TokenLookup: "header: Authorization, query: token, cookie: jwt",	
-		TokenHeadName: "Bearer",		
-		TimeFunc: time.Now,
+		Realm:         "Dev",
+		Key:           []byte("secret"),
+		Timeout:       time.Hour,
+		MaxRefresh:    time.Hour,
+		TokenLookup:   "header: Authorization, query: token, cookie: jwt",
+		TokenHeadName: "Bearer",
+		TimeFunc:      time.Now,
 
 		// IdentityKey
- 		IdentityKey: "sub",
+		IdentityKey: "sub",
 
 		// Signin
 		Authenticator: controllers.Signin,
@@ -78,22 +78,22 @@ func main() {
 		LoginResponse: controllers.SigninResponse,
 
 		// Logout Response
-		LogoutResponse : controllers.Logout,
+		LogoutResponse: controllers.Logout,
 
 		// Unauthorized
-		Unauthorized: controllers.Unauthorized,		
+		Unauthorized: controllers.Unauthorized,
 
-		// Custome Payload 
-		PayloadFunc : controllers.PayloadFunc,
-		// Custome Identity 
-		IdentityHandler : controllers.IdentityHandler,
+		// Custome Payload
+		PayloadFunc: controllers.PayloadFunc,
+		// Custome Identity
+		IdentityHandler: controllers.IdentityHandler,
 
 		// Refresh Token Response
-		RefreshResponse : controllers.RefreshResponse,
-	})	
+		RefreshResponse: controllers.RefreshResponse,
+	})
 
 	if err != nil {
-		fmt.Println(err);
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
@@ -124,42 +124,42 @@ func main() {
 	// When Unexpected Error Happend
 	r.Use(globalRecover)
 
-	r.NoRoute(authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
-		c.JSON(404, gin.H{	
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(404, gin.H{
 			"message": "Page not found",
 		})
 	})
-	
+
 	/* Routes */
-		r.GET("/", func(c *gin.Context) {
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "Hello World",
+		})
+	})
+
+	v1 := r.Group("/api/v1")
+	{
+		v1.GET("/status", func(c *gin.Context) {
 			c.JSON(200, gin.H{
-				"message": "Hello World",
+				"version": "v1",
+				"message": "Oke",
 			})
-		})	
+		})
 
-		v1 := r.Group("/api/v1")
+		v1Auth := v1.Group("/auth")
 		{
-			v1.GET("/status",func(c *gin.Context){
-				c.JSON(200,gin.H{
-					"version" : "v1",
-					"message" : "Oke",
-				})
-			})
-
-			v1Auth := v1.Group("/auth")
-			{
-				v1Auth.POST("/signin",authMiddleware.LoginHandler)
-				v1Auth.POST("/signup",controllers.Signup)
-				v1Auth.POST("/forgot-password",controllers.ForgotPassword)				
-			}
-
-			v1.Use(authMiddleware.MiddlewareFunc())
-			{
-				v1.POST("/logout",authMiddleware.LogoutHandler)
-				v1.POST("/refresh-token", authMiddleware.RefreshHandler)
-				v1.GET("/me", controllers.Me)
-			}
+			v1Auth.POST("/signin", authMiddleware.LoginHandler)
+			v1Auth.POST("/signup", controllers.Signup)
+			v1Auth.POST("/forgot-password", controllers.ForgotPassword)
 		}
+
+		v1.Use(authMiddleware.MiddlewareFunc())
+		{
+			v1.POST("/logout", authMiddleware.LogoutHandler)
+			v1.POST("/refresh-token", authMiddleware.RefreshHandler)
+			v1.GET("/me", controllers.Me)
+		}
+	}
 	/* Routes */
 
 	// running server
@@ -170,12 +170,14 @@ func main() {
 func globalRecover(c *gin.Context) {
 	defer func(c *gin.Context) {
 		if rec := recover(); rec != nil {
+
 			f, _ := os.OpenFile(os.Getenv("APP_LOGGER_LOCATION"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 
 			logger := log.New(f, "Error : ", log.LstdFlags)
 
 			logger.Println(time.Now().String())
 			logger.Println(rec)
+			fmt.Println(rec)
 
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Terjadi Kesalahan",
