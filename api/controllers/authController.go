@@ -1,41 +1,52 @@
 package controllers
 
 import (
-	"crypto/tls"
 	"errors"
-	"fmt"
 	"time"
 	// "reflect"
+	"crypto/tls"
+	"fmt"
 
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/litondev/gin-react-crud/api/config"
 	"github.com/litondev/gin-react-crud/api/helpers"
 	"github.com/litondev/gin-react-crud/api/models"
 	"github.com/litondev/gin-react-crud/api/requests"
+
+	jwt "github.com/appleboy/gin-jwt/v2"
 	gomail "gopkg.in/mail.v2"
+	// "gorm.io/gorm"
 	// "net/http"
 	// "fmt"
 	// "encoding/json"
 )
+
+
+func SigninResponse(c *gin.Context, code int, token string, expire time.Time) {
+	c.JSON(200, gin.H{
+		"access_token": token,
+		"expire":       expire.Format(time.RFC3339),
+	})
+}
+
 
 func Signin(c *gin.Context) (interface{}, error) {
 	err := helpers.Validate(c, &requests.VSigninRequest)
 
 	if err != nil {
 		return nil, err
-	}
-
-	database, _ := config.Database()
+	}	
+	
+	database := config.DB
 
 	result := map[string]interface{}{}
 
-	database.Model(&models.User{}).Where("email = ?", requests.VSigninRequest.Email).First(&result)
+	database.Model(&models.User{}).Select("id","password","email").Where("email = ?", requests.VSigninRequest.Email).First(&result)
 
 	if len(result) == 0 {
 		return nil, errors.New("Email tidak ditemukan")
 	}
-
+	
 	var isValidPassword bool = helpers.CheckPasswordHash(
 		requests.VSigninRequest.Password,
 		result["password"].(string),
@@ -49,13 +60,6 @@ func Signin(c *gin.Context) (interface{}, error) {
 		ID:    result["id"].(uint),
 		Email: result["email"].(string),
 	}, nil
-}
-
-func SigninResponse(c *gin.Context, code int, token string, expire time.Time) {
-	c.JSON(200, gin.H{
-		"access_token": token,
-		"expire":       expire.Format(time.RFC3339),
-	})
 }
 
 func Unauthorized(c *gin.Context, code int, message string) {
@@ -112,7 +116,7 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	database, _ := config.Database()
+	database := config.DB
 
 	hash, _ := helpers.HashPassword(requests.VSigninRequest.Password)
 
@@ -147,7 +151,7 @@ func ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	database, _ := config.Database()
+	database := config.DB
 
 	result := map[string]interface{}{}
 
@@ -204,7 +208,7 @@ func sendEmail(result *map[string]interface{}) {
 }
 
 func ResetPassword(c *gin.Context) {
-	database, _ := config.Database()
+	database := config.DB
 
 	tx := database.Begin()
 
@@ -232,7 +236,7 @@ func ResetPassword(c *gin.Context) {
 
 	query := database.Model(&models.User{})
 	// Select remember_token digunakan ketika update ke nil/null
-	query = query.Select("remember_token")
+	query = query.Select("remember_token","password")
 	query = query.Where("email = ?", requests.VResetPasswordRequest.Email)
 	query = query.Where("remember_token = ?",requests.VResetPasswordRequest.Token)
 

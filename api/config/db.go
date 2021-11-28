@@ -1,10 +1,5 @@
 package config
 
-// Untuk Mengeksekusi Package
-/*
- package main
-*/
-
 import (
 	"errors"
 	"fmt"
@@ -14,6 +9,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+var DB *gorm.DB
 
 func Database() (*gorm.DB, error) {
 	// Load Dot Env
@@ -54,16 +51,3 @@ func Database() (*gorm.DB, error) {
 	// Return Gorm Orm
 	return db, nil
 }
-
-// Check Db Koneksi
-/*
-func main() {
-	_, err := Database()
-
-	if err != nil {
-		fmt.Println("You are can't connect to database")
-	} else {
-		fmt.Println("You are connect to database")
-	}
-}
-*/

@@ -16,10 +16,16 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/litondev/gin-react-crud/api/config"
 	"github.com/litondev/gin-react-crud/api/controllers"
 	// "github.com/litondev/gin-react-crud/api/models"
 	// "github.com/litondev/gin-react-crud/api/requests"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	// "gorm.io/driver/mysql"
 )
+
+var DB *gorm.DB
 
 func main() {
 	// load env file
@@ -30,7 +36,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
+	
 	// get debug mode
 	debug := os.Getenv("APP_DEBUG")
 	appDebug, err := strconv.ParseBool(debug)
@@ -46,6 +52,28 @@ func main() {
 	 fmt.Println(reflect.TypeOf(test))
 	 fmt.Println(reflect.TypeOf(appDebug))
 	*/
+
+	// Mysql
+	// dsn := os.Get("DB_USER") + ":" + 
+	// 	os.Get("DB_PASSWORD") + "@tcp(" + 
+	// 	os.Get("DB_HOST") + ":" + 
+	// 	os.Get("DB_PORT")+")/" + 
+	// 	os.Get("DB_NAME") + "|?charset=utf8mb4&parseTime=True&loc=Local"
+
+	// config.DB, _ = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+
+	// Postgres
+	dsn := "host=" + os.Getenv("DB_HOST") +
+		" user=" + os.Getenv("DB_USER") +
+		" password=" + os.Getenv("DB_PASSWORD") +
+		" dbname=" + os.Getenv("DB_NAME") +
+		" port=" + os.Getenv("DB_PORT") +
+		" sslmode=disable TimeZone=Asia/Jakarta"
+
+	config.DB, _ = gorm.Open(postgres.New(postgres.Config{
+		PreferSimpleProtocol: true, 
+		DSN : dsn,
+  	}))
 
 	// set debug mode
 	if appDebug == true {
@@ -108,6 +136,19 @@ func main() {
 
 	// intial gin
 	r := gin.Default()
+	
+	// USING DB IN MIDDLEWARE
+	/* 
+		DB,_ :=  config.Database()
+
+		r.Use(func(c *gin.Context){
+			c.Set("DB",DB)
+			c.Next()
+		})
+
+		// di controller
+		// database := c.MustGet("DB").(*gorm.DB);
+	*/
 
 	// set static assets
 	r.Static("/assets", "./assets")
@@ -147,7 +188,7 @@ func main() {
 				"message": "Oke",
 			})
 		})
-
+	
 		v1Auth := v1.Group("/auth")
 		{
 			v1Auth.POST("/signin", authMiddleware.LoginHandler)
@@ -156,10 +197,19 @@ func main() {
 			v1Auth.POST("/reset-password",controllers.ResetPassword)
 		}
 		
-		v1.POST("/refresh-token", authMiddleware.RefreshHandler)
-
 		v1.Use(authMiddleware.MiddlewareFunc())
 		{
+			v1.GET("/data",controllers.IndexData)
+			v1.POST("/data",controllers.StoreData)
+			v1.GET("/data/:id",controllers.ShowData)
+			v1.DELETE("/data/:id",controllers.DestoryData)
+			v1.PUT("/data/:id",controllers.UpdateData)
+
+			v1.POST("/refresh-token", authMiddleware.RefreshHandler)
+
+			v1.POST("/logout", authMiddleware.LogoutHandler)
+			v1.GET("/me", controllers.Me)
+
 			v1.PUT("/profil/update",controllers.UpdateProfilData)
 			v1.POST("/profil/upload",controllers.UpdateProfilPhoto)
 			// CONTOH UPLOAD IMAGE
@@ -195,15 +245,12 @@ func main() {
 
 			// 	c.String(200, fmt.Sprintf("File %s uploaded successfully", file.Filename))
 			// })
-
-			v1.POST("/logout", authMiddleware.LogoutHandler)
-			v1.GET("/me", controllers.Me)
 		}
 	}
 	/* Routes */
 
 	// running server
-	r.Run(os.Getenv("APP_HOST") + ":" + os.Getenv("APP_PORT"))
+	r.Run(os.Getenv("APP_HOST") + ":" + os.Getenv("APP_PORT"))	
 }
 
 // When Unexpected Error Happend

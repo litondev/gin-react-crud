@@ -38,7 +38,7 @@ func UpdateProfilData(c *gin.Context){
 
 	var ID uint = uint(claims["sub"].(float64))
 
-	database, _ := config.Database()
+	database := config.DB
 
 	resultSearchEmail := map[string]interface{}{}
 	
@@ -107,10 +107,8 @@ func UpdateProfilPhoto(c *gin.Context){
 	// 	c.JSON(500, gin.H{
 	// 		"message": "Image tidak valid",
 	// 	})
-
 	// 	return
 	// }
-
 
 	claims := jwt.ExtractClaims(c)
 

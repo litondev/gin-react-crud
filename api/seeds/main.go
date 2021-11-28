@@ -34,7 +34,7 @@ func main() {
 			}
 		}
 
-		for i := 0; i < 3; i++ {
+		for i := 0; i < 30; i++ {
 			var id string = "data" + strconv.Itoa(i)
 
 			data := models.Data{
