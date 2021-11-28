@@ -9,6 +9,8 @@ import (
 	"time"
 
 	// "reflect"
+	// "path/filepath"
+	// "github.com/disintegration/imaging"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-contrib/cors"
@@ -153,11 +155,48 @@ func main() {
 			v1Auth.POST("/forgot-password", controllers.ForgotPassword)
 			v1Auth.POST("/reset-password",controllers.ResetPassword)
 		}
+		
+		v1.POST("/refresh-token", authMiddleware.RefreshHandler)
 
 		v1.Use(authMiddleware.MiddlewareFunc())
 		{
+			v1.PUT("/profil/update",controllers.UpdateProfilData)
+			v1.POST("/profil/upload",controllers.UpdateProfilPhoto)
+			// CONTOH UPLOAD IMAGE
+			// v1.POST("/profil/upload", func(c *gin.Context) {
+			// 	file, err := c.FormFile("file")
+
+			// 	if err != nil {
+			// 		c.String(200, fmt.Sprintf("get form err: %s", err.Error()))
+			// 		return
+			// 	}
+
+			// 	// image/jpeg image/jpg png
+			// 	// fmt.Println(file.Header["Content-Type"][0])
+
+			// 	filename := filepath.Base("")+"/assets/"+file.Filename
+
+			// 	if err := c.SaveUploadedFile(file, filename); err != nil {				
+			// 		c.String(200, fmt.Sprintf("upload file err: %s", err.Error()))
+			// 		return
+			// 	}
+		
+			// 	hello, errP := imaging.Open(filename)
+			// 	fmt.Println(errP)
+			// 	hell := imaging.Resize(hello, 128, 128, imaging.Lanczos)
+			// 	errs := imaging.Save(hell, filepath.Base("")+"/assets/out.png")
+
+			// 	fmt.Println(errs)
+
+			// 	e := os.Remove(filename)
+			// 	if e != nil {
+			// 			log.Fatal(e)
+			// 	}					
+
+			// 	c.String(200, fmt.Sprintf("File %s uploaded successfully", file.Filename))
+			// })
+
 			v1.POST("/logout", authMiddleware.LogoutHandler)
-			v1.POST("/refresh-token", authMiddleware.RefreshHandler)
 			v1.GET("/me", controllers.Me)
 		}
 	}

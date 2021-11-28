@@ -232,7 +232,7 @@ func ResetPassword(c *gin.Context) {
 
 	query := database.Model(&models.User{})
 	// Select remember_token digunakan ketika update ke nil/null
-	query = query.Select("email","password","remember_token")
+	query = query.Select("remember_token")
 	query = query.Where("email = ?", requests.VResetPasswordRequest.Email)
 	query = query.Where("remember_token = ?",requests.VResetPasswordRequest.Token)
 
