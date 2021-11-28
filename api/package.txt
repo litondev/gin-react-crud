@@ -27,3 +27,9 @@ go get -u github.com/disintegration/imaging // image manipulation
 go get github.com/gin-contrib/cors // cors
 
 go get golang.org/x/crypto/bcrypt // bcrypt
+
+go get -u github.com/SebastiaanKlippert/go-wkhtmltopdf
+
+// install juga
+sudo apt-get update
+sudo apt-get install xvfb libfontconfig wkhtmltopdf

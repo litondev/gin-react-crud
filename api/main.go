@@ -204,6 +204,9 @@ func main() {
 			v1.GET("/data/:id",controllers.ShowData)
 			v1.DELETE("/data/:id",controllers.DestoryData)
 			v1.PUT("/data/:id",controllers.UpdateData)
+			v1.GET("/data/export/pdf",controllers.ExportPdfData)
+			v1.GET("/data/export/excel",controllers.ExportExcelData)
+			v1.GET("/data/import",controllers.ImportExcelData)
 
 			v1.POST("/refresh-token", authMiddleware.RefreshHandler)
 
