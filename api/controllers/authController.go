@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	// "reflect"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -15,7 +16,6 @@ import (
 	gomail "gopkg.in/mail.v2"
 	// "net/http"
 	// "fmt"
-	// "reflect"
 	// "encoding/json"
 )
 
@@ -204,7 +204,57 @@ func sendEmail(result *map[string]interface{}) {
 }
 
 func ResetPassword(c *gin.Context) {
+	database, _ := config.Database()
+
+	tx := database.Begin()
+
+	err := helpers.Validate(c, &requests.VResetPasswordRequest)
+
+	if err != nil {
+		tx.Rollback()
+		c.JSON(422, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}	
+
+	// fmt.Println(reflect.TypeOf(requests.VResetPasswordRequest.NewPassword))
+
+	if requests.VResetPasswordRequest.NewPassword != requests.VResetPasswordRequest.PasswordConfirm {
+		tx.Rollback()
+		c.JSON(422, gin.H{
+			"message": "Password tidak sama",
+		})
+		return
+	}
+
+	hash, _ := helpers.HashPassword(requests.VResetPasswordRequest.NewPassword)
+
+	query := database.Model(&models.User{})
+	// Select remember_token digunakan ketika update ke nil/null
+	query = query.Select("email","password","remember_token")
+	query = query.Where("email = ?", requests.VResetPasswordRequest.Email)
+	query = query.Where("remember_token = ?",requests.VResetPasswordRequest.Token)
+
+	result := map[string]interface{}{}
+
+	query.First(&result)
+
+	if len(result) == 0 {
+		tx.Rollback()
+		c.JSON(500, gin.H{
+			"message": "Data anda tidak valid",
+		})
+		return
+	}
+
+	query.Updates(&models.User{
+		Password : hash,
+		RememberToken : nil,
+	})
+
+	tx.Commit()
 	c.JSON(200, gin.H{
-		"message": "Reset Password",
+		"message": true,
 	})
 }

@@ -43,12 +43,11 @@ func msgForTag(fe validator.FieldError) string {
 
 func Validate(c *gin.Context, validators interface{}) error {
 	if err := c.ShouldBind(validators); err != nil {
-		if _, ok := err.(validator.FieldError); ok {
-			errs := err.(validator.ValidationErrors)
+		if errs, ok := err.(validator.ValidationErrors); ok {		
 			return errors.New(msgForTag(errs[0]))
 		} else {
-			// return errors.New(err.Error())
-			return errors.New("Terjadi Kesalahan")
+			return errors.New(err.Error())
+			// return errors.New("Terjadi Kesalahan")
 		}
 	}
 

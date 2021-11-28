@@ -151,6 +151,7 @@ func main() {
 			v1Auth.POST("/signin", authMiddleware.LoginHandler)
 			v1Auth.POST("/signup", controllers.Signup)
 			v1Auth.POST("/forgot-password", controllers.ForgotPassword)
+			v1Auth.POST("/reset-password",controllers.ResetPassword)
 		}
 
 		v1.Use(authMiddleware.MiddlewareFunc())
