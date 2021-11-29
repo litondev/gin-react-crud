@@ -228,7 +228,18 @@ func DestoryData(c *gin.Context){
 }
 
 func ExportPdfData(c *gin.Context){
-	htmlTmp, errHtmlTmp := template.ParseFiles("./template/input.html")
+	database := c.MustGet("DB").(*gorm.DB);	
+
+	resultData := []map[string]interface{}{}
+
+	DataFields := database.Model(&models.Data{})	
+		DataFields.Find(&resultData)
+
+	var dataTemplate = map[string]interface{}{
+		"DataFields" : resultData,
+	}
+
+	htmlTmp, errHtmlTmp := template.ParseFiles("./template/data.html")
 
     if errHtmlTmp != nil {
         fmt.Println(errHtmlTmp)
@@ -240,7 +251,7 @@ func ExportPdfData(c *gin.Context){
 
 	buffer := new(bytes.Buffer)
 
-    errBuffer := htmlTmp.Execute(buffer, nil)
+    errBuffer := htmlTmp.Execute(buffer, dataTemplate)
 
     if errBuffer != nil {
         fmt.Println(errBuffer)
@@ -282,8 +293,34 @@ func ExportPdfData(c *gin.Context){
 		return;
 	}
 
+	fileExcelOpen,errFileExcelOpen := os.Open("./assets/output.pdf")
+	
+	if errFileExcelOpen != nil {
+		fmt.Println(errFileExcelOpen.Error())
+
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
+		return 
+	}
+
+	reader := bufio.NewReader(fileExcelOpen)
+
+    content, errContent := ioutil.ReadAll(reader)
+
+	if errContent != nil {
+		fmt.Println(errContent.Error())
+		c.JSON(500,gin.H{
+			"message": "Terjadi Kesalahan",
+		})
+		return 
+	}
+        
+    encoded := base64.StdEncoding.EncodeToString(content)
+
 	c.JSON(200,gin.H{
-		"message" : true,
+		"message": true,
+		"download": encoded,
 	})
 	return 
 }

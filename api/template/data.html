@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Testing</title>
+    </head>
+    <body>
+    <table>
+        <tr>
+            <td>Id</td>
+            <td>Nama</td>
+            <td>Phone</td>
+        </tr>
+        {{range $element := .DataFields}} 
+            <tr>
+                <td>{{$element.id}}</td>
+                <td>{{$element.name}}</td>        
+                <td>{{$element.phone}}</td>
+            </tr>
+        {{end}} 
+     </table> 
+    </body>
+</html>
