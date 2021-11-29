@@ -222,7 +222,7 @@ func main() {
 			v1.PUT("/data/:id",controllers.UpdateData)
 			v1.GET("/data/export/pdf",controllers.ExportPdfData)
 			v1.GET("/data/export/excel",controllers.ExportExcelData)
-			v1.GET("/data/import",controllers.ImportExcelData)
+			v1.POST("/data/import",controllers.ImportExcelData)
 
 			v1.POST("/refresh-token", jwtAuthMiddleware.RefreshHandler)
 

@@ -19,6 +19,7 @@ import (
 	"github.com/SebastiaanKlippert/go-wkhtmltopdf"
 	"bytes"
     "html/template"
+	"path/filepath"
 )
 
 func IndexData(c *gin.Context){
@@ -393,7 +394,29 @@ func ExportExcelData(c *gin.Context){
 }
 
 func ImportExcelData(c *gin.Context){
-	fileExcel, errFileExcel := excelize.OpenFile("./assets/Data.xlsx")
+	database := c.MustGet("DB").(*gorm.DB);	
+	
+	file, errGetFile := c.FormFile("excel")
+
+	if errGetFile != nil {
+		fmt.Println(errGetFile.Error())		
+		c.JSON(500, gin.H{
+			"message": "Terjadi Kesalahan",
+		})
+		return
+	}
+
+	pathname := filepath.Base("") + "/assets/ " + file.Filename
+
+	if errUploadFile := c.SaveUploadedFile(file, pathname); errUploadFile != nil {				
+		fmt.Println(errUploadFile.Error())
+		c.JSON(500, gin.H{
+			"message": "Terjadi Kesalahan",
+		})
+		return
+	}
+
+	fileExcel, errFileExcel := excelize.OpenFile(pathname)
 	
     if errFileExcel != nil {
         fmt.Println(errFileExcel.Error())
@@ -414,15 +437,26 @@ func ImportExcelData(c *gin.Context){
     }
 	
 	
-    for _, row := range rows {
-        for _, colCell := range row {			
-         	fmt.Print(colCell, "\t")
-        }
+    for index, row := range rows {
+        // for _, colCell := range row {			
+        //  	fmt.Print(colCell, "\t")
+        // }
+
+		if(index > 0){
+			var phone *string = &row[1]
+
+			resultData := database.Create(&models.Data{
+				Name : row[0],
+				Phone : phone,
+			})	
+
+			fmt.Println(resultData.Error)
+		}
+
         fmt.Println()
     }
 	
-
 	c.JSON(200,gin.H{
-	 	"data" : len(rows),
+	 	"data" : len(rows) - 1 ,
 	})
 }
