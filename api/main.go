@@ -215,7 +215,6 @@ func main() {
 		
 		v1.Use(jwtAuthMiddleware.MiddlewareFunc())
 		{
-			// test 
 			v1.GET("/data",controllers.IndexData)
 			v1.POST("/data",controllers.StoreData)
 			v1.GET("/data/:id",controllers.ShowData)
@@ -230,9 +229,12 @@ func main() {
 			v1.POST("/logout", jwtAuthMiddleware.LogoutHandler)
 			v1.GET("/me", controllers.Me)
 
-			// test
 			v1.PUT("/profil/update",controllers.UpdateProfilData)
 			v1.POST("/profil/upload",controllers.UpdateProfilPhoto)
+
+			/* Product */		
+			
+			/* User */
 			
 			// CONTOH UPLOAD IMAGE
 			// v1.POST("/profil/upload", func(c *gin.Context) {

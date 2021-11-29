@@ -113,6 +113,13 @@ func ShowData(c *gin.Context){
 		queryData.Where("id = ?",id)
 		queryData.First(&resultData)
 
+	if len(resultData) == 0 {
+		c.JSON(404,gin.H{
+			"message" : "Not Found",
+		})
+		return 
+	}
+
 	c.JSON(200,gin.H{
 		"data" : resultData,
 	})
@@ -146,6 +153,18 @@ func UpdateData(c *gin.Context){
 	queryData := database.Model(&models.Data{})
 		queryData.Select("name","phone")
 		queryData.Where("id = ?",id)
+	
+	resultData := map[string]interface{}{}
+
+		queryData.First(&resultData)
+
+	if len(resultData) == 0 {
+		c.JSON(404,gin.H{
+			"message" : "Not Found",
+		})
+		return 
+	}
+
 		queryData.Updates(&models.Data{
 			Name : html.EscapeString(strings.Trim(requests.VDataRequest.Name," ")),
 			Phone : &phone,
@@ -180,6 +199,18 @@ func DestoryData(c *gin.Context){
 
 	queryData := database.Model(&models.Data{})
 		queryData.Where("id = ?",id)
+
+	resultData := map[string]interface{}{}
+
+		queryData.First(&resultData)
+
+	if len(resultData) == 0 {
+		c.JSON(404,gin.H{
+			"message" : "Not Found",
+		})
+		return 
+	}
+
 		queryData.Delete(&models.Data{})
 
 	if queryData.Error != nil {
@@ -197,7 +228,7 @@ func DestoryData(c *gin.Context){
 }
 
 func ExportPdfData(c *gin.Context){
-	htmlTmp, errHtmlTmp := template.ParseFiles("./input.html")
+	htmlTmp, errHtmlTmp := template.ParseFiles("./template/input.html")
 
     if errHtmlTmp != nil {
         fmt.Println(errHtmlTmp)
@@ -242,7 +273,7 @@ func ExportPdfData(c *gin.Context){
 		return;
 	}
 
-	errWriteFile := pdfg.WriteFile("./output.pdf")
+	errWriteFile := pdfg.WriteFile("./assets/output.pdf")
 	if errWriteFile != nil {
 		fmt.Println(errWriteFile)
 		c.JSON(500,gin.H{
@@ -344,12 +375,17 @@ func ImportExcelData(c *gin.Context){
 		})
         return
     }
-
+	
+	
     for _, row := range rows {
-        for _, colCell := range row {
-            fmt.Print(colCell, "\t")
+        for _, colCell := range row {			
+         	fmt.Print(colCell, "\t")
         }
-
         fmt.Println()
     }
+	
+
+	c.JSON(200,gin.H{
+	 	"data" : len(rows),
+	})
 }
