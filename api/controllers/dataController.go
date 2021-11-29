@@ -1,18 +1,17 @@
 package controllers
 
-import "github.com/gin-gonic/gin"
-import "github.com/litondev/gin-react-crud/api/config"
-import "github.com/litondev/gin-react-crud/api/models"
-import "github.com/litondev/gin-react-crud/api/helpers"
-import "github.com/litondev/gin-react-crud/api/requests"
-// import jwt "github.com/appleboy/gin-jwt/v2"
-import "strconv"
-import "fmt"
-import "strings"
-import "html"
-import "github.com/xuri/excelize/v2"
 
 import (
+	"github.com/gin-gonic/gin"
+	"github.com/litondev/gin-react-crud/api/models"
+	"github.com/litondev/gin-react-crud/api/helpers"
+	"github.com/litondev/gin-react-crud/api/requests"
+	"strconv"
+	"fmt"
+	"strings"
+	"html"
+	"github.com/xuri/excelize/v2"
+	"gorm.io/gorm"
 	"bufio"
     "encoding/base64"
     "io/ioutil"
@@ -20,13 +19,10 @@ import (
 	"github.com/SebastiaanKlippert/go-wkhtmltopdf"
 	"bytes"
     "html/template"
-    // "strings"
 )
 
 func IndexData(c *gin.Context){
-	// claims := jwt.ExtractClaims(c)
-	// var ID uint = uint(claims["sub"].(float64))
-    // var stringID string = strconv.FormatUint(uint64(ID),10)
+	database := c.MustGet("DB").(*gorm.DB);	
 
 	page := c.DefaultQuery("page", "1")
 	new_page,_ := strconv.Atoi(page)
@@ -39,10 +35,14 @@ func IndexData(c *gin.Context){
 	result := []map[string]interface{}{}
 
 	var resultCount int64;
-	config.DB.Model(&models.Data{}).Select("id").Count(&resultCount)
-	new_page = (int(resultCount) - ((new_page * new_per_page) - new_per_page))
 
-	query := config.DB.Model(&models.Data{})
+	queryResultCount := database.Model(&models.Data{})
+		queryResultCount.Select("id")
+		queryResultCount.Count(&resultCount)
+
+	new_page = (int(resultCount) - ( (new_page * new_per_page) - new_per_page) )
+
+	query := database.Model(&models.Data{})
 		query.Select("name","id","phone")
 		if search != "" {
 			query.Where("name LIKE ?", "%"+search+"%")		
@@ -58,12 +58,14 @@ func IndexData(c *gin.Context){
 	})
 }
 
-func StoreData(c *gin.Context){
-	err := helpers.Validate(c, &requests.VDataRequest)
+func StoreData(c *gin.Context){	
+	database := c.MustGet("DB").(*gorm.DB);	
 
-	if err != nil {
+	errValidate := helpers.Validate(c, &requests.VDataRequest)
+
+	if errValidate != nil {
 		c.JSON(422, gin.H{
-			"message": err.Error(),
+			"message": errValidate.Error(),
 		})
 		return
 	}
@@ -75,7 +77,16 @@ func StoreData(c *gin.Context){
 		Phone : &phone,
 	}
 
-	config.DB.Model(&models.Data{}).Create(&users)
+	queryData := database.Model(&models.Data{})
+		queryData.Create(&users)
+	
+	if queryData.Error != nil {
+		fmt.Println(queryData.Error)
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
+		return 
+	}
 
 	c.JSON(200,gin.H{
 		"message": true,
@@ -83,176 +94,254 @@ func StoreData(c *gin.Context){
 }
 
 func ShowData(c *gin.Context){
-	id,_  := strconv.Atoi(c.Param("id"))
+	database := c.MustGet("DB").(*gorm.DB);	
+
+	id,errGetParam  := strconv.Atoi(c.Param("id"))
+
+	if errGetParam != nil {
+		fmt.Println(errGetParam.Error())
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
+		return 
+	}
 
 	resultData := map[string]interface{}{}
 
-	query := config.DB.Model(&models.Data{})
-		query.Select("id","name","phone")
-		query.Where("id = ?",id)
-		query.First(&resultData)
+	queryData := database.Model(&models.Data{})
+		queryData.Select("id","name","phone")
+		queryData.Where("id = ?",id)
+		queryData.First(&resultData)
 
 	c.JSON(200,gin.H{
-		"message": true,
 		"data" : resultData,
 	})
+	return 
 }
 
 func UpdateData(c *gin.Context){
-	err := helpers.Validate(c, &requests.VDataRequest)
+	errValidate := helpers.Validate(c, &requests.VDataRequest)
 
-	if err != nil {
+	if errValidate != nil {
 		c.JSON(422, gin.H{
-			"message": err.Error(),
+			"message": errValidate.Error(),
 		})
 		return
 	}
 
-	id,_  := strconv.Atoi(c.Param("id"))
+	database := c.MustGet("DB").(*gorm.DB);	
+
+	id,errGetParam  := strconv.Atoi(c.Param("id"))
+
+	if errGetParam != nil {
+		fmt.Println(errGetParam.Error())
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
+		return 
+	}
 
 	var phone string = html.EscapeString(strings.Trim(requests.VDataRequest.Phone," "))
 
-	query := config.DB.Model(&models.Data{})
-		query.Select("name","phone")
-		query.Where("id = ?",id)
-		query.Updates(&models.Data{
+	queryData := database.Model(&models.Data{})
+		queryData.Select("name","phone")
+		queryData.Where("id = ?",id)
+		queryData.Updates(&models.Data{
 			Name : html.EscapeString(strings.Trim(requests.VDataRequest.Name," ")),
 			Phone : &phone,
 		})
 
+	if queryData.Error != nil {
+		fmt.Println(queryData.Error)
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
+		return 
+	}
+
 	c.JSON(200,gin.H{
 		"message": true,
 	})
+	return
 }
 
 func DestoryData(c *gin.Context){
-	id,_  := strconv.Atoi(c.Param("id"))
+	database := c.MustGet("DB").(*gorm.DB);	
 
-	query := config.DB.Model(&models.Data{})
-		query.Where("id = ?",id)
-		query.Delete(&models.Data{})
+	id,errGetParam  := strconv.Atoi(c.Param("id"))
+
+	if errGetParam != nil {
+		fmt.Println(errGetParam.Error())
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
+		return 
+	}
+
+	queryData := database.Model(&models.Data{})
+		queryData.Where("id = ?",id)
+		queryData.Delete(&models.Data{})
+
+	if queryData.Error != nil {
+		fmt.Println(queryData.Error)
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
+		return 
+	}
 
 	c.JSON(200,gin.H{
 		"message": true,
 	})
+	return 
 }
 
 func ExportPdfData(c *gin.Context){
-	htmlTmp, err := template.ParseFiles("./input.html")
-    if err != nil {
-        fmt.Println(err)
+	htmlTmp, errHtmlTmp := template.ParseFiles("./input.html")
+
+    if errHtmlTmp != nil {
+        fmt.Println(errHtmlTmp)
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
         return
     }
 
-	buf := new(bytes.Buffer)
-    err = htmlTmp.Execute(buf, nil)
-    if err != nil {
-        fmt.Println(err)
+	buffer := new(bytes.Buffer)
+
+    errBuffer := htmlTmp.Execute(buffer, nil)
+
+    if errBuffer != nil {
+        fmt.Println(errBuffer)
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
         return
     }
 
-	pdfg, err := wkhtmltopdf.NewPDFGenerator()
-    if err != nil {
-		fmt.Println(err)
+	pdfg, errWkhtml := wkhtmltopdf.NewPDFGenerator()
+
+    if errWkhtml != nil {
+		fmt.Println(errWkhtml)
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
 		return;
     }
 
-	// f, err := os.Open("./input.html")
-	// if f != nil {
-	// 	defer f.Close()
-	// }
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return;
-	// }
-
-	pdfg.AddPage(wkhtmltopdf.NewPageReader(strings.NewReader(buf.String())))
-
+	pdfg.AddPage(wkhtmltopdf.NewPageReader(strings.NewReader(buffer.String())))
 	pdfg.Orientation.Set(wkhtmltopdf.OrientationPortrait)
 	pdfg.Dpi.Set(300)
 
-	err = pdfg.Create()
-	if err != nil {
-		fmt.Println(err)
+	errPdfgCreate := pdfg.Create()
+	if errPdfgCreate != nil {
+		fmt.Println(errPdfgCreate)
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
 		return;
 	}
 
-	err = pdfg.WriteFile("./output.pdf")
-	if err != nil {
-		fmt.Println(err)
+	errWriteFile := pdfg.WriteFile("./output.pdf")
+	if errWriteFile != nil {
+		fmt.Println(errWriteFile)
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
 		return;
 	}
 
-	fmt.Println("Done")
+	c.JSON(200,gin.H{
+		"message" : true,
+	})
+	return 
 }
 
 func ExportExcelData(c *gin.Context){
-	f := excelize.NewFile()
+	database := c.MustGet("DB").(*gorm.DB);	
 
-	f.SetCellValue("Sheet1", "A1","ID")
-	f.SetCellValue("Sheet1", "B1","Name")
-	f.SetCellValue("Sheet1", "C1","Phone")
+	fileExcel := excelize.NewFile()
 
-	result := []map[string]interface{}{}
+	fileExcel.SetCellValue("Sheet1", "A1","ID")
+	fileExcel.SetCellValue("Sheet1", "B1","Name")
+	fileExcel.SetCellValue("Sheet1", "C1","Phone")
 
-	query := config.DB.Model(&models.Data{})	
-		query.Find(&result)
+	resultData := []map[string]interface{}{}
 
-    for index, row := range result {
+	queryData := database.Model(&models.Data{})	
+		queryData.Find(&resultData)
+
+    for index, row := range resultData {
 		index := index + 2;
 		phone := row["phone"]
 
 		if row["phone"] != nil {
 			phone = *row["phone"].(*string)
 		}
-		f.SetCellValue("Sheet1","A"+strconv.Itoa(index),row["id"])
-		f.SetCellValue("Sheet1","B"+strconv.Itoa(index),row["name"])
-		f.SetCellValue("Sheet1","C"+strconv.Itoa(index),phone)		
+
+		fileExcel.SetCellValue("Sheet1", "A" + strconv.Itoa(index), row["id"])
+		fileExcel.SetCellValue("Sheet1", "B" + strconv.Itoa(index), row["name"])
+		fileExcel.SetCellValue("Sheet1", "C" + strconv.Itoa(index), phone)		
 	}
     
-    if err := f.SaveAs("./assets/Data.xlsx"); err != nil {
-        fmt.Println(err)
+    if errSaveFileExcel := fileExcel.SaveAs("./assets/Data.xlsx"); errSaveFileExcel != nil {
+        fmt.Println(errSaveFileExcel.Error())
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
+		return 
     }
 
-	// Open file on disk.
-    fs, _ := os.Open("./assets/Data.xlsx")
-    
-    // Read entire JPG into byte slice.
-    reader := bufio.NewReader(fs)
-    content, _ := ioutil.ReadAll(reader)
-    
-    // Encode as base64.
+    fileExcelOpen,errFileExcelOpen := os.Open("./assets/Data.xlsx")
+	
+	if errFileExcelOpen != nil {
+		fmt.Println(errFileExcelOpen.Error())
+
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
+		return 
+	}
+
+    reader := bufio.NewReader(fileExcelOpen)
+
+    content, errContent := ioutil.ReadAll(reader)
+
+	if errContent != nil {
+		fmt.Println(errContent.Error())
+		c.JSON(500,gin.H{
+			"message": "Terjadi Kesalahan",
+		})
+		return 
+	}
+        
     encoded := base64.StdEncoding.EncodeToString(content)
     
 	c.JSON(200,gin.H{
 		"message": true,
 		"download": encoded,
 	})
+	return 
 }
 
 func ImportExcelData(c *gin.Context){
-	f, err := excelize.OpenFile("./assets/Data.xlsx")
-    if err != nil {
-        fmt.Println(err)
+	fileExcel, errFileExcel := excelize.OpenFile("./assets/Data.xlsx")
+	
+    if errFileExcel != nil {
+        fmt.Println(errFileExcel.Error())
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
         return
-    }
-    // defer func() {
-    //     // Close the spreadsheet.
-    //     if err := f.Close(); err != nil {
-    //         fmt.Println(err)
-    //     }
-    // }()
-    // Get value from cell by given worksheet name and axis.
-    cell, err := f.GetCellValue("Sheet1", "B2")
-    if err != nil {
-        fmt.Println(err)
-        return
-    }
-    fmt.Println(cell)
+    }    
+	
     // Get all the rows in the Sheet1.
-    rows, err := f.GetRows("Sheet1")
-    if err != nil {
-        fmt.Println(err)
+    rows, errGetRow := fileExcel.GetRows("Sheet1")
+    if errGetRow != nil {
+        fmt.Println(errGetRow.Error())
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
         return
     }
 
@@ -260,6 +349,7 @@ func ImportExcelData(c *gin.Context){
         for _, colCell := range row {
             fmt.Print(colCell, "\t")
         }
+
         fmt.Println()
     }
 }

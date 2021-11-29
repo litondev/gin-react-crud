@@ -4,16 +4,31 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-
+	"github.com/joho/godotenv"
 	"github.com/litondev/gin-react-crud/api/config"
 	"github.com/litondev/gin-react-crud/api/helpers"
 	"github.com/litondev/gin-react-crud/api/models"
 )
 
 func main() {
-	database, err := config.Database()
+	errEnv := godotenv.Load()
 
-	if err == nil {
+	if errEnv != nil {
+		fmt.Println(errEnv)
+		os.Exit(1)
+	}
+
+	var dsn map[string]string = map[string]string{
+		"DB_HOST" : os.Getenv("DB_HOST"),
+		"DB_PORT" : os.Getenv("DB_PORT"),
+		"DB_NAME" : os.Getenv("DB_NAME"),
+		"DB_USER" : os.Getenv("DB_USER"),
+		"DB_PASSWORD" : os.Getenv("DB_PASSWORD"),
+	}
+
+	database, errDb := config.Database(dsn)
+
+	if errDb == nil {
 		for i := 0; i < 3; i++ {
 			hash, _ := helpers.HashPassword("password")
 			var id string = "user" + strconv.Itoa(i)

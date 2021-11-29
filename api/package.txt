@@ -1,8 +1,6 @@
 github.com/joho/godotenv // dotenv
 
-github.com/appleboy/gin-jwt/v2 // jwt for stateless app
-
-github.com/codegangsta/gin // hot change for file
+github.com/appleboy/gin-jwt/v2 // jwt => for stateless app
 
 github.com/jinzhu/gorm | gorm.io // orm
 
@@ -28,8 +26,8 @@ go get github.com/gin-contrib/cors // cors
 
 go get golang.org/x/crypto/bcrypt // bcrypt
 
-go get -u github.com/SebastiaanKlippert/go-wkhtmltopdf
+go get -u github.com/SebastiaanKlippert/go-wkhtmltopdf // pdf file
 
-// install juga
+// install juga utk mengunakan wkhtmltopdf
 sudo apt-get update
 sudo apt-get install xvfb libfontconfig wkhtmltopdf

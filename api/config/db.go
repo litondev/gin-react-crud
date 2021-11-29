@@ -3,49 +3,45 @@ package config
 import (
 	"errors"
 	"fmt"
-	"os"
-
-	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
+func Database(env map[string]string) (*gorm.DB, error) {
+	// Mysql
+		// dsn := os.Get("DB_USER") + ":" + 
+		// 	os.Get("DB_PASSWORD") + "@tcp(" + 
+		// 	os.Get("DB_HOST") + ":" + 
+		// 	os.Get("DB_PORT")+")/" + 
+		// 	os.Get("DB_NAME") + "|?charset=utf8mb4&parseTime=True&loc=Local"
+		// db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
-func Database() (*gorm.DB, error) {
-	// Load Dot Env
-	err := godotenv.Load()
+	// Postgres
+		// dsn := "host=" + os.Getenv("DB_HOST") +
+		// " user=" + os.Getenv("DB_USER") +
+		// " password=" + os.Getenv("DB_PASSWORD") +
+		// " dbname=" + os.Getenv("DB_NAME") +
+		// " port=" + os.Getenv("DB_PORT") +
+		// " sslmode=disable TimeZone=Asia/Jakarta"
 
-	// Check If Not Err
-	if err != nil {
-		// Print Error
-		fmt.Println(err)
-		// Throw Error
-		return nil, errors.New("Error loading .env file")
-		// Exit Program
-		/*
-		 os.Exit(1)
-		*/
-	}
-
-	dsn := "host=" + os.Getenv("DB_HOST") +
-		" user=" + os.Getenv("DB_USER") +
-		" password=" + os.Getenv("DB_PASSWORD") +
-		" dbname=" + os.Getenv("DB_NAME") +
-		" port=" + os.Getenv("DB_PORT") +
+	dsn := "host=" + env["DB_HOST"] +
+		" user=" + env["DB_USER"] + 
+		" password=" + env["DB_PASSWORD"] + 
+		" dbname=" + env["DB_NAME"] + 
+		" port=" + env["DB_PORT"] +
 		" sslmode=disable TimeZone=Asia/Jakarta"
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db,errDb := gorm.Open(postgres.New(postgres.Config{
+		PreferSimpleProtocol: true, 
+		DSN : dsn,
+	}))
 
-	if err != nil {
+	if errDb != nil {
 		// Print Error
-		fmt.Println(err)
+		fmt.Println(errDb)
+
 		// Throw Error
 		return nil, errors.New("Can't Connect To Database")
-		// Exit Program
-		/* 
-			os.Exit(1)
-		*/
 	}
 
 	// Return Gorm Orm

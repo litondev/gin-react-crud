@@ -2,54 +2,41 @@ package controllers
 
 import (
 	"errors"
-	"time"
-	// "reflect"
-	"crypto/tls"
+	"time"	
+	// "crypto/tls"
 	"fmt"
-
 	"github.com/gin-gonic/gin"
-	"github.com/litondev/gin-react-crud/api/config"
+	"gorm.io/gorm"	
 	"github.com/litondev/gin-react-crud/api/helpers"
 	"github.com/litondev/gin-react-crud/api/models"
 	"github.com/litondev/gin-react-crud/api/requests"
-
 	jwt "github.com/appleboy/gin-jwt/v2"
-	gomail "gopkg.in/mail.v2"
-	// "gorm.io/gorm"
-	// "net/http"
-	// "fmt"
-	// "encoding/json"
+	// gomail "gopkg.in/mail.v2"
 )
 
-
-func SigninResponse(c *gin.Context, code int, token string, expire time.Time) {
-	c.JSON(200, gin.H{
-		"access_token": token,
-		"expire":       expire.Format(time.RFC3339),
-	})
-}
-
-
 func Signin(c *gin.Context) (interface{}, error) {
-	err := helpers.Validate(c, &requests.VSigninRequest)
+	errValidation := helpers.Validate(c, &requests.VSigninRequest)
 
-	if err != nil {
-		return nil, err
+	if errValidation != nil {
+		return nil, errValidation
 	}	
 	
-	database := config.DB
+	database := c.MustGet("DB").(*gorm.DB);	
 
-	result := map[string]interface{}{}
+	resultUser := map[string]interface{}{}
 
-	database.Model(&models.User{}).Select("id","password","email").Where("email = ?", requests.VSigninRequest.Email).First(&result)
+	queryUser := database.Model(&models.User{})
+		queryUser.Select("id","password","email")
+		queryUser.Where("email = ?", requests.VSigninRequest.Email)
+		queryUser.First(&resultUser)
 
-	if len(result) == 0 {
+	if len(resultUser) == 0 {
 		return nil, errors.New("Email tidak ditemukan")
 	}
 	
 	var isValidPassword bool = helpers.CheckPasswordHash(
 		requests.VSigninRequest.Password,
-		result["password"].(string),
+		resultUser["password"].(string),
 	)
 
 	if isValidPassword == false {
@@ -57,9 +44,17 @@ func Signin(c *gin.Context) (interface{}, error) {
 	}
 
 	return &models.User{
-		ID:    result["id"].(uint),
-		Email: result["email"].(string),
+		ID:    resultUser["id"].(uint),
+		Email: resultUser["email"].(string),
 	}, nil
+}
+
+func SigninResponse(c *gin.Context, code int, token string, expire time.Time) {
+	c.JSON(200, gin.H{
+		"access_token": token,
+		"expire":       expire.Format(time.RFC3339),
+	})
+	return 
 }
 
 func Unauthorized(c *gin.Context, code int, message string) {
@@ -72,21 +67,25 @@ func Unauthorized(c *gin.Context, code int, message string) {
 func RefreshResponse(c *gin.Context, code int, token string, expire time.Time) {
 	c.JSON(200, gin.H{
 		"access_token": token,
-		"expire":       expire.Format(time.RFC3339),
+		"expire": expire.Format(time.RFC3339),
 	})
+	return 
 }
 
 func Logout(c *gin.Context, code int) {
 	c.JSON(200, gin.H{
-		"message": "Success",
+		"message": true,
 	})
+	return
 }
 
 func Me(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
+
 	c.JSON(200, gin.H{
-		"Id": uint(claims["sub"].(float64)),
+		"id": uint(claims["sub"].(float64)),
 	})
+	return 
 }
 
 func PayloadFunc(data interface{}) jwt.MapClaims {
@@ -95,6 +94,7 @@ func PayloadFunc(data interface{}) jwt.MapClaims {
 			"sub": v.ID,
 		}
 	}
+
 	return jwt.MapClaims{}
 }
 
@@ -107,144 +107,181 @@ func IdentityHandler(c *gin.Context) interface{} {
 }
 
 func Signup(c *gin.Context) {
-	err := helpers.Validate(c, &requests.VSignupRequest)
+	errValidation := helpers.Validate(c, &requests.VSignupRequest)
 
-	if err != nil {
+	if errValidation != nil {
 		c.JSON(422, gin.H{
-			"message": err.Error(),
+			"message": errValidation.Error(),
 		})
 		return
 	}
 
-	database := config.DB
+	database := c.MustGet("DB").(*gorm.DB);	
 
-	hash, _ := helpers.HashPassword(requests.VSigninRequest.Password)
+	tx := database.Begin()
 
-	user := &models.User{
-		Name:     requests.VSignupRequest.Name,
-		Password: hash,
-		Email:    requests.VSignupRequest.Email,
+	hash,errHash := helpers.HashPassword(requests.VSigninRequest.Password)
+
+	if(errHash != nil){
+		tx.Rollback()
+		fmt.Println(errHash.Error())
+		c.JSON(500,gin.H{
+			"message": "Terjadi Kesalahan",
+		})
+		return 
 	}
 
-	result := database.Create(&user)
+	user := &models.User{
+		Name		: requests.VSignupRequest.Name,
+		Email		: requests.VSignupRequest.Email,
+		Password	: hash,
+	}
 
-	if result.Error != nil {
+	resultUser := database.Create(&user)
+
+	if resultUser.Error != nil {
+		tx.Rollback()
+		fmt.Println(resultUser.Error)
 		c.JSON(500, gin.H{
 			"message": "Terjadi Kesalahan",
 		})
-
 		return
 	}
 
+	tx.Commit()
 	c.JSON(200, gin.H{
 		"message": true,
 	})
+	return 
 }
 
 func ForgotPassword(c *gin.Context) {
-	err := helpers.Validate(c, &requests.VForgotPasswordRequest)
+	errValidation := helpers.Validate(c, &requests.VForgotPasswordRequest)
 
-	if err != nil {
+	if errValidation != nil {
 		c.JSON(422, gin.H{
-			"message": err.Error(),
+			"message": errValidation.Error(),
 		})
 		return
 	}
 
-	database := config.DB
+	database := c.MustGet("DB").(*gorm.DB);	
 
-	result := map[string]interface{}{}
+	tx := database.Begin()
 
-	database.Model(&models.User{}).Where("email = ?", requests.VForgotPasswordRequest.Email).Update("remember_token", "12345").First(&result)
+	resultUser := map[string]interface{}{}
 
-	if len(result) == 0 {
+	queryUser := database.Model(&models.User{})
+		queryUser.Where("email = ?", requests.VForgotPasswordRequest.Email)
+		queryUser.First(&resultUser)
+
+	if len(resultUser) == 0 {
+		tx.Rollback()		
 		c.JSON(500, gin.H{
 			"message": "Email tidak ditemukan",
 		})
 		return
 	}
+	
+	queryUser.Update("remember_token", "12345")
 
-	sendEmail(&result)
-
-	c.JSON(200, gin.H{
-		"message": "Forgot Password",
-	})
-}
-
-func sendEmail(result *map[string]interface{}) {
-
-	realResult := *result
-	token := *realResult["remember_token"].(*string)
-
-	m := gomail.NewMessage()
-
-	// Set E-Mail sender
-	m.SetHeader("From", "from@gmail.com")
-
-	// Set E-Mail receivers
-	m.SetHeader("To", "to@example.com")
-
-	// Set E-Mail subject
-	m.SetHeader("Subject", "Gomail test subject")
-
-	// Set E-Mail body. You can set plain text or html with text/html
-	// m.SetBody("text/plain", "This is Gomail test body")
-	m.SetBody("text/html", "Hello <b>Bob</b> and <i>Cora</i>! <a href='http://localhost:3000/reset-password?token="+token+"'>Reset Password</a>")
-
-	// Settings for SMTP server
-	d := gomail.NewDialer("smtp.mailtrap.io", 2525, "75999957ca7383", "95a016b68c6448")
-
-	// This is only needed when SSL/TLS certificate is not valid on server.
-	// In production this should be set to false.
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-
-	// Now send E-Mail
-	if err := d.DialAndSend(m); err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
-
-	return
-}
-
-func ResetPassword(c *gin.Context) {
-	database := config.DB
-
-	tx := database.Begin()
-
-	err := helpers.Validate(c, &requests.VResetPasswordRequest)
-
-	if err != nil {
+	if queryUser.Error != nil {
 		tx.Rollback()
+		fmt.Println(queryUser.Error)
+		c.JSON(500, gin.H{
+			"message": "Terjadi Kesalahan",
+		})
+		return
+	}
+	
+	// Send Email
+	// sendEmail(&resultUser)
+
+	tx.Commit()
+	c.JSON(200, gin.H{
+		"message": true,
+	})
+	return 
+}
+
+// func sendEmail(result *map[string]interface{}) {
+// 	realResult := *result
+// 	token := *realResult["remember_token"].(*string)
+
+// 	m := gomail.NewMessage()
+
+// 	// Set E-Mail sender
+// 	m.SetHeader("From", "from@gmail.com")
+
+// 	// Set E-Mail receivers
+// 	m.SetHeader("To", "to@example.com")
+
+// 	// Set E-Mail subject
+// 	m.SetHeader("Subject", "Gomail test subject")
+
+// 	// Set E-Mail body. You can set plain text or html with text/html
+// 	// m.SetBody("text/plain", "This is Gomail test body")
+// 	m.SetBody("text/html", "Hello <b>Bob</b> and <i>Cora</i>! <a href='http://localhost:3000/reset-password?token="+token+"'>Reset Password</a>")
+
+// 	// Settings for SMTP server
+// 	d := gomail.NewDialer("smtp.mailtrap.io", 2525, "75999957ca7383", "95a016b68c6448")
+
+// 	// This is only needed when SSL/TLS certificate is not valid on server.
+// 	// In production this should be set to false.
+// 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+// 	// Now send E-Mail
+// 	if err := d.DialAndSend(m); err != nil {
+// 		fmt.Println(err)
+// 		panic(err)
+// 	}
+
+// 	return
+// }
+
+func ResetPassword(c *gin.Context) {	
+	errValidation := helpers.Validate(c, &requests.VResetPasswordRequest)
+
+	if errValidation != nil {
 		c.JSON(422, gin.H{
-			"message": err.Error(),
+			"message": errValidation.Error(),
 		})
 		return
 	}	
 
-	// fmt.Println(reflect.TypeOf(requests.VResetPasswordRequest.NewPassword))
+	database := c.MustGet("DB").(*gorm.DB);	
+
+	tx := database.Begin()
 
 	if requests.VResetPasswordRequest.NewPassword != requests.VResetPasswordRequest.PasswordConfirm {
-		tx.Rollback()
+		tx.Rollback()		
 		c.JSON(422, gin.H{
 			"message": "Password tidak sama",
 		})
 		return
 	}
 
-	hash, _ := helpers.HashPassword(requests.VResetPasswordRequest.NewPassword)
+	hash, errHash := helpers.HashPassword(requests.VResetPasswordRequest.NewPassword)
+
+	if(errHash != nil){
+		tx.Rollback()		
+		fmt.Println(errHash.Error())
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
+		return 
+	}
+
+	resultUser := map[string]interface{}{}
 
 	query := database.Model(&models.User{})
-	// Select remember_token digunakan ketika update ke nil/null
-	query = query.Select("remember_token","password")
-	query = query.Where("email = ?", requests.VResetPasswordRequest.Email)
-	query = query.Where("remember_token = ?",requests.VResetPasswordRequest.Token)
+		// Select remember_token digunakan ketika update ke nil/null
+		query.Select("remember_token","password")
+		query.Where("email = ?", requests.VResetPasswordRequest.Email)
+		query.Where("remember_token = ?",requests.VResetPasswordRequest.Token)
+		query.First(&resultUser)
 
-	result := map[string]interface{}{}
-
-	query.First(&result)
-
-	if len(result) == 0 {
+	if len(resultUser) == 0 {
 		tx.Rollback()
 		c.JSON(500, gin.H{
 			"message": "Data anda tidak valid",
@@ -252,10 +289,19 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 
-	query.Updates(&models.User{
+	resultQueryUpdateUser := query.Updates(&models.User{
 		Password : hash,
 		RememberToken : nil,
 	})
+
+	if resultQueryUpdateUser.Error != nil {
+		tx.Rollback()
+		fmt.Println(resultQueryUpdateUser.Error)
+		c.JSON(500, gin.H{
+			"message": "Terjadi Kesalahan",
+		})
+		return
+	}
 
 	tx.Commit()
 	c.JSON(200, gin.H{

@@ -2,11 +2,9 @@ package helpers
 
 import (
 	"errors"
-
 	"github.com/gin-gonic/gin"
-
-	// "fmt"
 	"github.com/go-playground/validator/v10"
+	"strconv"
 )
 
 /*
@@ -42,13 +40,19 @@ func msgForTag(fe validator.FieldError) string {
 }
 
 func Validate(c *gin.Context, validators interface{}) error {
-	if err := c.ShouldBind(validators); err != nil {
-		if errs, ok := err.(validator.ValidationErrors); ok {		
-			return errors.New(msgForTag(errs[0]))
-		} else {
-			return errors.New(err.Error())
-			// return errors.New("Terjadi Kesalahan")
+	debug := c.MustGet("DEBUG").(string)
+	appDebug, _ := strconv.ParseBool(debug)
+	
+	if errValidate := c.ShouldBind(validators); errValidate != nil {
+		if err, ok := errValidate.(validator.ValidationErrors); ok {		
+			return errors.New(msgForTag(err[0]))
+		} 
+		
+		if(appDebug == true){
+			return errors.New(errValidate.Error())			
 		}
+
+		return errors.New("Terjadi Kesalahan")
 	}
 
 	return nil

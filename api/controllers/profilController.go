@@ -1,53 +1,46 @@
 package controllers
 
-import (
-	// "crypto/tls"
-	"errors"
+import (	
 	"os"
-	"fmt"
-	// "time"
-	// "reflect"
+	"fmt"	
 	"strconv"
-
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
-	"github.com/litondev/gin-react-crud/api/config"
 	"github.com/litondev/gin-react-crud/api/helpers"
 	"github.com/litondev/gin-react-crud/api/models"
 	"github.com/litondev/gin-react-crud/api/requests"
 	"path/filepath"
 	"github.com/disintegration/imaging"
-
-	// gomail "gopkg.in/mail.v2"
-	// "net/http"
-	// "fmt"
-	// "encoding/json"
+	"gorm.io/gorm"
 )
 
 func UpdateProfilData(c *gin.Context){
-	err := helpers.Validate(c, &requests.VUpdateProfilData)
+	errValidate := helpers.Validate(c, &requests.VUpdateProfilData)
 
-	if err != nil {
+	if errValidate != nil {
 		c.JSON(422, gin.H{
-			"message": err.Error(),
+			"message": errValidate.Error(),
 		})
 		return
 	}
+
+	database := c.MustGet("DB").(*gorm.DB);	
+
+	tx := database.Begin()
 
 	claims := jwt.ExtractClaims(c)
 
 	var ID uint = uint(claims["sub"].(float64))
 
-	database := config.DB
-
 	resultSearchEmail := map[string]interface{}{}
 	
 	querySearchEmail := database.Model(&models.User{})
-	querySearchEmail.Where("email = ?",requests.VUpdateProfilData.Email)
-	querySearchEmail.Not("id = ?",ID)
-	querySearchEmail.First(&resultSearchEmail)
+		querySearchEmail.Where("email = ?",requests.VUpdateProfilData.Email)
+		querySearchEmail.Not("id = ?",ID)
+		querySearchEmail.First(&resultSearchEmail)
 
 	if len(resultSearchEmail) > 0 {
+		tx.Rollback()		
 		c.JSON(500, gin.H{
 			"message": "Email telah terpakai",
 		})
@@ -55,9 +48,10 @@ func UpdateProfilData(c *gin.Context){
 	}
 
 	resultUser := map[string]interface{}{}
+
 	queryUser := database.Model(&models.User{})
-	queryUser.Where("id = ?",ID)
-	queryUser.First(&resultUser)
+		queryUser.Where("id = ?",ID)
+		queryUser.First(&resultUser)
 
 	var isValidPassword bool = helpers.CheckPasswordHash(
 		requests.VUpdateProfilData.PasswordConfirm,
@@ -65,6 +59,7 @@ func UpdateProfilData(c *gin.Context){
 	)
 
 	if isValidPassword == false {
+		tx.Rollback()		
 		c.JSON(500, gin.H{
 			"message": "Password Konfirmasi Tidak Valid",
 		})
@@ -77,71 +72,130 @@ func UpdateProfilData(c *gin.Context){
 	}
 
 	if(requests.VUpdateProfilData.Password != ""){
-		hash, _ := helpers.HashPassword(requests.VUpdateProfilData.Password)
+		hash, errHash := helpers.HashPassword(requests.VUpdateProfilData.Password)
+
+		if(errHash != nil){
+			tx.Rollback()
+			fmt.Println(errHash.Error())		
+			c.JSON(500,gin.H{
+				"message" : "Terjadi Kesalahan",
+			})
+			return
+		}
+
 		updateUser.Password = hash
 	}
-
-		fmt.Println(updateUser)
+		
 	queryUpdateUser := database.Model(&models.User{})
 		queryUpdateUser.Where("id = ?",ID)
 		queryUpdateUser.Updates(&updateUser);
 
-	c.JSON(200, gin.H{
-		"message" : true,
-	})
-}
-
-func UpdateProfilPhoto(c *gin.Context){
-	
-	file, err := c.FormFile("photo")
-
-	if err != nil {
+	if queryUpdateUser.Error != nil {
+		tx.Rollback()
+		fmt.Println(queryUpdateUser.Error)
 		c.JSON(500, gin.H{
-			"message": err.Error(),
+			"message": "Terjadi Kesalahan",
 		})
-
 		return
 	}
 
-	// if(file.Header["Content-Type"][0] != "image/jpeg" || file.Header["Content-Type"][0] != "image/png"){
-	// 	c.JSON(500, gin.H{
-	// 		"message": "Image tidak valid",
-	// 	})
-	// 	return
-	// }
+	tx.Commit()
+	c.JSON(200, gin.H{
+		"message" : true,
+	})
+	return 
+}
+
+func UpdateProfilPhoto(c *gin.Context){
+	file, errGetFile := c.FormFile("photo")
+
+	if errGetFile != nil {
+		fmt.Println(errGetFile.Error())		
+		c.JSON(500, gin.H{
+			"message": "Terjadi Kesalahan",
+		})
+		return
+	}
+
+	if(file.Header["Content-Type"][0] != "image/jpeg" || file.Header["Content-Type"][0] != "image/png"){
+		c.JSON(500, gin.H{
+			"message": "Gambar tidak valid",
+		})
+	 	return
+	}	
 
 	claims := jwt.ExtractClaims(c)
 
 	var ID uint = uint(claims["sub"].(float64))
+
     var stringID string = strconv.FormatUint(uint64(ID),10)
+
+	filename := stringID + "-" + file.Filename;
 	/* FOLDER USER HARUS ADA */
-	filename := filepath.Base("")+"/assets/users/" + stringID + "-" + file.Filename
+	pathname := filepath.Base("") + "/assets/users/" + filename
 
-	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
+	if _,errFileExists := os.Stat(pathname); errFileExists == nil {
+		errRemoveFile := os.Remove(pathname)
+		if errRemoveFile != nil {
+			fmt.Println(errRemoveFile.Error())
+			c.JSON(500,gin.H{
+				"message" : "Terjadi Kesalahan",
+			})
+			return 
+		}
+	}
 
-	} else {
-		e := os.Remove(filename)
-		if e != nil {
-			fmt.Println(e)
-		}	
-	}	
-
-	if err := c.SaveUploadedFile(file, filename); err != nil {				
+	if errUploadFile := c.SaveUploadedFile(file, pathname); errUploadFile != nil {				
+		fmt.Println(errUploadFile.Error())
 		c.JSON(500, gin.H{
-			"message": err.Error(),
+			"message": "Terjadi Kesalahan",
 		})
 		return
 	}
 
-	openFile, _ := imaging.Open(filename)
+	openFile, errOpenFile := imaging.Open(filename)
+
+	if(errOpenFile != nil){
+		fmt.Println(errOpenFile.Error())
+		c.JSON(500, gin.H{
+			"message": "Terjadi Kesalahan",
+		})
+		return
+	}
 
 	resizeFile := imaging.Resize(openFile, 128, 128, imaging.Lanczos)
-	/* FOLDER USER HARUS ADA */
-	errResiszeFile := imaging.Save(resizeFile, filepath.Base("")+"/assets/users/" + stringID + "-" + file.Filename)
+	
+	errRessizeFile := imaging.Save(resizeFile, pathname)
 
-	fmt.Println(errResiszeFile)
+	if(errRessizeFile != nil){
+		fmt.Println(errRessizeFile.Error())
+		c.JSON(200,gin.H{
+			"message": "Terjadi Kesalahan",
+		})	
+		return 
+	}
 
+	database := c.MustGet("DB").(*gorm.DB);	
+
+	tx := database.Begin()
+
+	queryUpdateUser := database.Model(&models.User{})
+		queryUpdateUser.Select("photo")
+		queryUpdateUser.Where("id = ?",ID)
+		queryUpdateUser.Update("photo",filename)
+
+	if queryUpdateUser.Error != nil {
+		tx.Rollback()
+		fmt.Println(queryUpdateUser.Error)
+		c.JSON(500, gin.H{
+			"message": "Terjadi Kesalahan",
+		})
+		return
+	}
+		
+	tx.Commit()
 	c.JSON(200, gin.H{
 		"message": true,
 	})			
+	return 
 }

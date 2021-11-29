@@ -7,73 +7,59 @@ import (
 	"os"
 	"strconv"
 	"time"
-
-	// "reflect"
-	// "path/filepath"
-	// "github.com/disintegration/imaging"
-
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/litondev/gin-react-crud/api/config"
 	"github.com/litondev/gin-react-crud/api/controllers"
+	// "reflect"
+	// "path/filepath"
+	// "github.com/disintegration/imaging"
 	// "github.com/litondev/gin-react-crud/api/models"
 	// "github.com/litondev/gin-react-crud/api/requests"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	// "gorm.io/driver/postgres"
+	// "gorm.io/gorm"
 	// "gorm.io/driver/mysql"
 )
 
-var DB *gorm.DB
-
 func main() {
 	// load env file
-	err := godotenv.Load()
+	errEnv := godotenv.Load()
 
 	// check is not an error
-	if err != nil {
-		fmt.Println(err)
+	if errEnv != nil {
+		fmt.Println(errEnv)
 		os.Exit(1)
 	}
 	
-	// get debug mode
-	debug := os.Getenv("APP_DEBUG")
-	appDebug, err := strconv.ParseBool(debug)
+	// connect to db
+	var dsn map[string]string = map[string]string{
+		"DB_HOST" : os.Getenv("DB_HOST"),
+		"DB_PORT" : os.Getenv("DB_PORT"),
+		"DB_NAME" : os.Getenv("DB_NAME"),
+		"DB_USER" : os.Getenv("DB_USER"),
+		"DB_PASSWORD" : os.Getenv("DB_PASSWORD"),
+	}
+	
+	// get database
+	db,errDb :=  config.Database(dsn)
 
-	// check is not an error
-	if err != nil {
-		fmt.Println(err)
+	// check database error or not
+	if errDb != nil {
+		fmt.Println(errDb)
 		os.Exit(1)
 	}
 
-	// check type data
-	/*
-	 fmt.Println(reflect.TypeOf(test))
-	 fmt.Println(reflect.TypeOf(appDebug))
-	*/
+	// get debug mode
+	debug := os.Getenv("APP_DEBUG")
+	appDebug, errDebug := strconv.ParseBool(debug)
 
-	// Mysql
-	// dsn := os.Get("DB_USER") + ":" + 
-	// 	os.Get("DB_PASSWORD") + "@tcp(" + 
-	// 	os.Get("DB_HOST") + ":" + 
-	// 	os.Get("DB_PORT")+")/" + 
-	// 	os.Get("DB_NAME") + "|?charset=utf8mb4&parseTime=True&loc=Local"
-
-	// config.DB, _ = gorm.Open(mysql.Open(dsn), &gorm.Config{})
-
-	// Postgres
-	dsn := "host=" + os.Getenv("DB_HOST") +
-		" user=" + os.Getenv("DB_USER") +
-		" password=" + os.Getenv("DB_PASSWORD") +
-		" dbname=" + os.Getenv("DB_NAME") +
-		" port=" + os.Getenv("DB_PORT") +
-		" sslmode=disable TimeZone=Asia/Jakarta"
-
-	config.DB, _ = gorm.Open(postgres.New(postgres.Config{
-		PreferSimpleProtocol: true, 
-		DSN : dsn,
-  	}))
+	// check is not an error
+	if errDebug != nil {
+		fmt.Println(errDebug)
+		os.Exit(1)
+	}
 
 	// set debug mode
 	if appDebug == true {
@@ -82,14 +68,8 @@ func main() {
 		gin.SetMode("release")
 	}
 
-	// log console to file
-	/*
-		f, _ := os.Create("gin.log")
-		gin.DefaultWriter = io.MultiWriter(f)
-	*/
-
 	// set jwt
-	authMiddleware, _ := jwt.New(&jwt.GinJWTMiddleware{
+	jwtAuthMiddleware, errJwtAuthMiddleware := jwt.New(&jwt.GinJWTMiddleware{
 		Realm:         "Dev",
 		Key:           []byte("secret"),
 		Timeout:       time.Hour,
@@ -122,38 +102,68 @@ func main() {
 		RefreshResponse: controllers.RefreshResponse,
 	})
 
-	if err != nil {
-		fmt.Println(err)
+	if errJwtAuthMiddleware != nil {
+		fmt.Println(errJwtAuthMiddleware)
 		os.Exit(1)
 	}
 
-	errInit := authMiddleware.MiddlewareInit()
+	errInitJwtAuthMiddleware := jwtAuthMiddleware.MiddlewareInit()
 
-	if errInit != nil {
-		fmt.Println(errInit.Error())
+	if errInitJwtAuthMiddleware != nil {
+		fmt.Println(errInitJwtAuthMiddleware.Error())
 		os.Exit(1)
 	}
 
 	// intial gin
 	r := gin.Default()
 	
-	// USING DB IN MIDDLEWARE
-	/* 
-		DB,_ :=  config.Database()
-
-		r.Use(func(c *gin.Context){
-			c.Set("DB",DB)
-			c.Next()
-		})
-
-		// di controller
-		// database := c.MustGet("DB").(*gorm.DB);
-	*/
-
 	// set static assets
 	r.Static("/assets", "./assets")
 	// try access
 	// http://localhost:8000/assets/images/logo.png
+	
+	// insert db to context
+	r.Use(func(c *gin.Context){
+		c.Set("DB",db)
+		c.Set("DEBUG",debug)
+		c.Next()
+	})
+
+	// When Unexpected Error Happend
+	r.Use(func(c *gin.Context) {
+		defer func(c *gin.Context) {
+			if rec := recover(); rec != nil {
+				logFile,logFileError := os.OpenFile(os.Getenv("APP_LOGGER_LOCATION"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+
+				if(logFileError != nil){
+					c.JSON(500,gin.H{
+						"message" : "Terjadi Kesalahan",
+					})
+					return 
+				}
+
+				logger := log.New(logFile, "Error : ", log.LstdFlags)
+	
+				logger.Println(time.Now().String())
+
+				logger.Println(rec)
+
+				fmt.Println(rec)
+				
+				var message string = "Terjadi Kesalahan";
+
+				if(appDebug == true){
+					message = rec.(string)
+				}			
+
+				c.JSON(500, gin.H{
+					"message": message,
+				})
+				return
+			}
+		}(c)
+		c.Next()
+	})
 
 	// Cors Middleware
 	r.Use(cors.New(cors.Config{
@@ -164,13 +174,11 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	// When Unexpected Error Happend
-	r.Use(globalRecover)
-
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{
 			"message": "Page not found",
 		})
+		return 
 	})
 
 	/* Routes */
@@ -178,6 +186,7 @@ func main() {
 		c.JSON(200, gin.H{
 			"message": "Hello World",
 		})
+		return
 	})
 
 	v1 := r.Group("/api/v1")
@@ -187,17 +196,18 @@ func main() {
 				"version": "v1",
 				"message": "Oke",
 			})
+			return
 		})
 	
 		v1Auth := v1.Group("/auth")
 		{
-			v1Auth.POST("/signin", authMiddleware.LoginHandler)
+			v1Auth.POST("/signin", jwtAuthMiddleware.LoginHandler)
 			v1Auth.POST("/signup", controllers.Signup)
 			v1Auth.POST("/forgot-password", controllers.ForgotPassword)
 			v1Auth.POST("/reset-password",controllers.ResetPassword)
 		}
 		
-		v1.Use(authMiddleware.MiddlewareFunc())
+		v1.Use(jwtAuthMiddleware.MiddlewareFunc())
 		{
 			v1.GET("/data",controllers.IndexData)
 			v1.POST("/data",controllers.StoreData)
@@ -208,13 +218,14 @@ func main() {
 			v1.GET("/data/export/excel",controllers.ExportExcelData)
 			v1.GET("/data/import",controllers.ImportExcelData)
 
-			v1.POST("/refresh-token", authMiddleware.RefreshHandler)
+			v1.POST("/refresh-token", jwtAuthMiddleware.RefreshHandler)
 
-			v1.POST("/logout", authMiddleware.LogoutHandler)
+			v1.POST("/logout", jwtAuthMiddleware.LogoutHandler)
 			v1.GET("/me", controllers.Me)
 
 			v1.PUT("/profil/update",controllers.UpdateProfilData)
 			v1.POST("/profil/upload",controllers.UpdateProfilPhoto)
+			
 			// CONTOH UPLOAD IMAGE
 			// v1.POST("/profil/upload", func(c *gin.Context) {
 			// 	file, err := c.FormFile("file")
@@ -254,25 +265,4 @@ func main() {
 
 	// running server
 	r.Run(os.Getenv("APP_HOST") + ":" + os.Getenv("APP_PORT"))	
-}
-
-// When Unexpected Error Happend
-func globalRecover(c *gin.Context) {
-	defer func(c *gin.Context) {
-		if rec := recover(); rec != nil {
-
-			f, _ := os.OpenFile(os.Getenv("APP_LOGGER_LOCATION"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-
-			logger := log.New(f, "Error : ", log.LstdFlags)
-
-			logger.Println(time.Now().String())
-			logger.Println(rec)
-			fmt.Println(rec)
-
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": "Terjadi Kesalahan",
-			})
-		}
-	}(c)
-	c.Next()
 }
