@@ -3,7 +3,8 @@ package controllers
 import (
 	"errors"
 	"time"	
-	// "crypto/tls"
+	"strconv"
+	"crypto/tls"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"	
@@ -11,7 +12,7 @@ import (
 	"github.com/litondev/gin-react-crud/api/models"
 	"github.com/litondev/gin-react-crud/api/requests"
 	jwt "github.com/appleboy/gin-jwt/v2"
-	// gomail "gopkg.in/mail.v2"
+	gomail "gopkg.in/mail.v2"
 )
 
 func Signin(c *gin.Context) (interface{}, error) {
@@ -120,7 +121,7 @@ func Signup(c *gin.Context) {
 
 	tx := database.Begin()
 
-	hash,errHash := helpers.HashPassword(requests.VSigninRequest.Password)
+	hash,errHash := helpers.HashPassword(requests.VSignupRequest.Password)
 
 	if(errHash != nil){
 		tx.Rollback()
@@ -195,7 +196,15 @@ func ForgotPassword(c *gin.Context) {
 	}
 	
 	// Send Email
-	// sendEmail(&resultUser)
+	errSendMail := sendEmail(resultUser,c)
+
+	if(errSendMail != nil){
+		fmt.Println(errSendMail)
+		c.JSON(500,gin.H{
+			"message" : "Terjadi Kesalahan",
+		})
+		return 
+	}
 
 	tx.Commit()
 	c.JSON(200, gin.H{
@@ -204,40 +213,42 @@ func ForgotPassword(c *gin.Context) {
 	return 
 }
 
-// func sendEmail(result *map[string]interface{}) {
-// 	realResult := *result
-// 	token := *realResult["remember_token"].(*string)
+func sendEmail(result map[string]interface{},c *gin.Context) error {
+	frontend_url := c.MustGet("FRONTEND_URL").(string)
+	token := *result["remember_token"].(*string)
 
-// 	m := gomail.NewMessage()
+	
+	mail := gomail.NewMessage()
+	
+	mail.SetHeader("From",c.MustGet("MAIL_FROM").(string))
+	mail.SetHeader("To", result["email"].(string))
+	mail.SetHeader("Subject", "Forgot Password")	
+	mail.SetBody("text/html", "<a href='" + frontend_url + "/reset-password?token=" + token + "'>Reset Password</a>")
+	
+	
+	mailPort,errMailPort := strconv.Atoi(c.MustGet("MAIL_PORT").(string))
 
-// 	// Set E-Mail sender
-// 	m.SetHeader("From", "from@gmail.com")
+	if errMailPort != nil {
+		return errors.New("Port Email Tidak Valid")
+	}
 
-// 	// Set E-Mail receivers
-// 	m.SetHeader("To", "to@example.com")
+	sendMail := gomail.NewDialer(
+		c.MustGet("MAIL_HOST").(string),
+		mailPort, 
+		c.MustGet("MAIL_USERNAME").(string), 
+		c.MustGet("MAIL_PASSWORD").(string),
+	)
 
-// 	// Set E-Mail subject
-// 	m.SetHeader("Subject", "Gomail test subject")
+	sendMail.TLSConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
 
-// 	// Set E-Mail body. You can set plain text or html with text/html
-// 	// m.SetBody("text/plain", "This is Gomail test body")
-// 	m.SetBody("text/html", "Hello <b>Bob</b> and <i>Cora</i>! <a href='http://localhost:3000/reset-password?token="+token+"'>Reset Password</a>")
+	if errSendMail := sendMail.DialAndSend(mail); errSendMail != nil {
+		return errors.New("Gagal Mengirim Email")
+	}
 
-// 	// Settings for SMTP server
-// 	d := gomail.NewDialer("smtp.mailtrap.io", 2525, "75999957ca7383", "95a016b68c6448")
-
-// 	// This is only needed when SSL/TLS certificate is not valid on server.
-// 	// In production this should be set to false.
-// 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-
-// 	// Now send E-Mail
-// 	if err := d.DialAndSend(m); err != nil {
-// 		fmt.Println(err)
-// 		panic(err)
-// 	}
-
-// 	return
-// }
+	return nil
+}
 
 func ResetPassword(c *gin.Context) {	
 	errValidation := helpers.Validate(c, &requests.VResetPasswordRequest)
