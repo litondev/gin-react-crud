@@ -20,12 +20,18 @@ const Signin = () => {
     })
 
     const onSubmit = (values,{setSubmitting}) => {            
-        setTimeout(() => {
-            alert(JSON.stringify(values, null, 2));
-            setSubmitting(false);
-        }, 400);        
+        window.$axios.post("/auth/signin",form)
+        .then(res => {
+            console.log(res)
+        })
+        .catch(err => {
+            window.$toastr('error','Terjadi Kesalahan');
+            console.log(err)
+        })
+        .finally(()=> {
+            setSubmitting(false)
+        })       
     }
-
     return (
         <div>
             <h1>Signin</h1>

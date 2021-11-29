@@ -406,6 +406,8 @@ func ImportExcelData(c *gin.Context){
 		return
 	}
 
+	// VALIDATION FILE
+
 	pathname := filepath.Base("") + "/assets/ " + file.Filename
 
 	if errUploadFile := c.SaveUploadedFile(file, pathname); errUploadFile != nil {				
@@ -436,15 +438,16 @@ func ImportExcelData(c *gin.Context){
         return
     }
 	
-	
     for index, row := range rows {
         // for _, colCell := range row {			
         //  	fmt.Print(colCell, "\t")
         // }
 
 		if(index > 0){
+			// VALIDATION DATA
+			
 			var phone *string = &row[1]
-
+			
 			resultData := database.Create(&models.Data{
 				Name : row[0],
 				Phone : phone,

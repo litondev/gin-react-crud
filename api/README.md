@@ -3,6 +3,9 @@
 <b>Purpose :</b>
   <p> I make this repository just for learning gin </p>
 
+<b> Install Vendor</b>
+ <p> go get download</p>
+ 
 <h1>Hot Reload With NodeMon(Recomended)</h1>
   <p> npm install -g nodemon</p>
   <p> nodemon --exec go run main.go --signal SIGTERM </p>

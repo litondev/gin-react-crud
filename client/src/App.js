@@ -3,6 +3,8 @@ import { BrowserRouter,Route,Routes } from "react-router-dom";
 import MyRoutes from "./routes/index.js";
 
 const App = () => {
+  let ToastContainer = window.$ToastContainer;
+
     return (        
         <BrowserRouter>   
           <React.Suspense fallback={ <span>Loading</span> }>    
@@ -19,6 +21,8 @@ const App = () => {
             }           
             </Routes>
           </React.Suspense>
+          <ToastContainer/>
+
         </BrowserRouter>
     )
 }

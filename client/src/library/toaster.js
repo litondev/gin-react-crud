@@ -11,7 +11,8 @@ window.$toastr = (action,args) => {
 		closeOnClick: true,
 		pauseOnHover: true,
 		draggable: true,
-		progress: undefined,
+		progress: true,
+		theme : 'colored'
 	};
 		
 	(action === 'error' ? window.$toast.error(args,options) : window.$toast.success(args,options))
