@@ -20,6 +20,7 @@ import (
 	"bytes"
     "html/template"
 	"path/filepath"
+	"math"
 )
 
 func IndexData(c *gin.Context){
@@ -33,29 +34,39 @@ func IndexData(c *gin.Context){
 
 	search := c.DefaultQuery("search","")
 
-	result := []map[string]interface{}{}
-
 	var resultCount int64;
 
-	queryResultCount := database.Model(&models.Data{})
-		queryResultCount.Select("id")
-		queryResultCount.Count(&resultCount)
+	var modelCount models.Data
 
-	new_page = (int(resultCount) - ( (new_page * new_per_page) - new_per_page) )
+	queryResultCount := database.Model(&modelCount)
+		queryResultCount.Select("id","name")
+		if search != "" {
+			queryResultCount.Where("name LIKE ?", "%"+search+"%")		
+		}
+		queryResultCount.Count(&resultCount)		
 
-	query := database.Model(&models.Data{})
+    count_total_page := float64(resultCount) / float64(new_per_page)
+    total_page := int(math.Ceil(count_total_page))
+    limitStart := (new_page - 1) * new_per_page;
+	
+	result := []map[string]interface{}{}
+
+	var queryCount models.Data
+	query := database.Model(&queryCount)
 		query.Select("name","id","phone")
 		if search != "" {
 			query.Where("name LIKE ?", "%"+search+"%")		
 		}
-		query.Where("id <= ?",new_page)
 		query.Order("id desc")
-		query.Limit(new_per_page)
+		query.Offset(limitStart)		
+		query.Limit(new_per_page)		
 		query.Find(&result)
 
 	c.JSON(200,gin.H{
 		"data" : result,
 		"per_page" : new_per_page,
+		"total_page" : total_page,
+		"total_data" : int(resultCount),
 	})
 }
 
@@ -73,13 +84,13 @@ func StoreData(c *gin.Context){
 		
 	var phone string = html.EscapeString(strings.Trim(requests.VDataRequest.Phone," "))
 
-	users := &models.Data{
+	data := models.Data{
 		Name : html.EscapeString(strings.Trim(requests.VDataRequest.Name," ")),
 		Phone : &phone,
 	}
 
 	queryData := database.Model(&models.Data{})
-		queryData.Create(&users)
+		queryData.Create(&data)
 	
 	if queryData.Error != nil {
 		fmt.Println(queryData.Error)

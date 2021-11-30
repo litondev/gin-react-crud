@@ -20,6 +20,7 @@ if(localStorage.getItem("user-token")){
     renderApp(res.data)
   })
   .catch(err => {
+    localStorage.removeItem("user-token")
     renderApp(false)
   })
 }else{

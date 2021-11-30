@@ -10,6 +10,10 @@ const myRoutes = [
 		component : React.lazy(() =>  import('../views/Signup'))
 	},
 	{
+		path : '/reset-password',
+		component : React.lazy(() => import("../views/ResetPassword"))
+	},
+	{
 		path : "/forgot-password",
 		component : React.lazy(() =>  import('../views/ForgotPassword'))
 	},

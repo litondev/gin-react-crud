@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate ,Navigate,Link} from "react-router-dom";
+import { useNavigate,Navigate, useSearchParams} from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 
-const SignupSchema = Yup.object()
+const ResetPasswordSchema = Yup.object()
     .shape({      
-        name : Yup.string()
-            .required('Required')
-            .max(50, 'Too Long!'),
-        password: Yup.string()
+        password_confirm : Yup.string()
+            .min(8, 'Too Short!')
+            .max(50, 'Too Long!')
+            .required('Required'),
+        new_password: Yup.string()
             .min(8, 'Too Short!')
             .max(50, 'Too Long!')
             .required('Required'),
@@ -17,20 +18,24 @@ const SignupSchema = Yup.object()
             .required('Required'),
     });
 
-const Signup = (props) => {
+const ResetPassword = (props) => {
+
     const navigate = useNavigate();
-  
+
+    const [searchParams] = useSearchParams();
+
     const [form] = useState({
-        name : '',
-        email : '', 
-        password : ''
+        password_confirm : '',
+        email : searchParams.get("email") || "user1@gmail.com", 
+        new_password : '',
+        token : searchParams.get("token") || ""
     })
 
     const onSubmit = (values,{setSubmitting}) => {            
-        window.$axios.post("/auth/signup",values)
+        window.$axios.post("/auth/reset-password",values)
         .then(() => {
             setSubmitting(false)
-            window.$toastr("success","Berhasil Membuat User")
+            window.$toastr("success","Berhasil Reset Password")
             navigate('/signin')
         })
         .catch(err => {
@@ -46,44 +51,33 @@ const Signup = (props) => {
 
     return (
         <div>
-            <h1>Signup</h1>
+            <h1>ResetPassword</h1>
 
             <Formik
                 initialValues={form}
-                validationSchema={SignupSchema}
+                validationSchema={ResetPasswordSchema}
                 onSubmit={onSubmit}>
                 {({isSubmitting,resetForm}) => (                
-                    <Form>
-                        <div>
-                            <Field
-                                type="name"
-                                name="name"
-                                placeholder="Name . . ." />
-
-                            <ErrorMessage  
-                                name="name" 
-                                component="div" />
-                        </div>
-                        
+                    <Form>                                      
                         <div>
                             <Field 
-                                type="email" 
-                                name="email"
-                                placeholder="Email . . ." />
+                                type="password" 
+                                name="new_password" 
+                                placeholder="Password . . ."/>
 
                             <ErrorMessage  
-                                name="email" 
+                                name="new_password" 
                                 component="div" />
                         </div>
 
                         <div>
                             <Field 
                                 type="password" 
-                                name="password" 
-                                placeholder="Password . . ."/>
+                                name="password_confirm" 
+                                placeholder="Password  Konfirmasi . . ."/>
 
                             <ErrorMessage  
-                                name="password" 
+                                name="password_confirm" 
                                 component="div" />
                         </div>
 
@@ -97,10 +91,7 @@ const Signup = (props) => {
                                 onClick={resetForm}>
                                 Reset
                             </button>
-                        </div>
-                        <div>                         
-                            <Link to="/signin">Signin</Link>
-                        </div>
+                        </div>                       
                     </Form>
                     )
                 }
@@ -109,4 +100,4 @@ const Signup = (props) => {
     );
 }
  
- export default Signup;
+ export default ResetPassword;

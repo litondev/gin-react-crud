@@ -12,8 +12,10 @@ const App = (props) => {
     }
 
      useEffect(() => {
-      setUser(props.auth);      
-    },[])
+       if(props.auth){
+        setAuth(props.auth)
+       }
+    },[props.auth])
 
     return (        
         <BrowserRouter>   

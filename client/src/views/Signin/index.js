@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate ,Navigate} from "react-router-dom";
+import { useNavigate ,Navigate,Link} from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 
@@ -88,6 +88,12 @@ const Signin = (props) => {
                                 onClick={resetForm}>
                                 Reset
                             </button>
+                        </div>
+
+                        <div>
+                            <Link to="/forgot-password">Forgot Password</Link>
+                            <br/>
+                            <Link to="/signup">Daftar</Link>
                         </div>
                     </Form>
                     )

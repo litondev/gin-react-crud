@@ -10,8 +10,8 @@ const DefaultLayout = (props) => {
 
         window.$axios.post("/logout")
         .then(() => {
-            window.$toastr("Success","Berhasil Keluar")            
             setIsLoadingLogout(false)
+            window.$toastr("Success","Berhasil Keluar")            
             localStorage.removeItem('user-token');            
             props.setUser(false);
             navigate('/')
