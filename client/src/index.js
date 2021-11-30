@@ -5,9 +5,23 @@ import "./library/axios.js";
 import "./library/toaster.js";
 import App from './App';
 
-ReactDOM.render(
-  <React.StrictMode>
-    <App/>
-  </React.StrictMode>,
-  document.getElementById('root')
-);
+const renderApp = (data = false) => {
+  ReactDOM.render(
+    <React.StrictMode>
+      <App auth={data}/>
+    </React.StrictMode>,
+    document.getElementById('root')
+  );
+}
+
+if(localStorage.getItem("user-token")){
+  window.$axios.get("/me")
+  .then(res => {    
+    renderApp(res.data)
+  })
+  .catch(err => {
+    renderApp(false)
+  })
+}else{
+  renderApp(false)
+}

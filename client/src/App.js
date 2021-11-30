@@ -1,9 +1,19 @@
-import React from 'react';
-import { BrowserRouter,Route,Routes } from "react-router-dom";
+import React,{useState,useEffect} from 'react';
+import { BrowserRouter,Route,Routes} from "react-router-dom";
 import MyRoutes from "./routes/index.js";
 
-const App = () => {
-  let ToastContainer = window.$ToastContainer;
+const App = (props) => {
+    const [user,setUser] = useState(false);
+
+    const ToastContainer = window.$ToastContainer;
+
+    const setAuth = (user) => {      
+      setUser(user)
+    }
+
+     useEffect(() => {
+      setUser(props.auth);      
+    },[])
 
     return (        
         <BrowserRouter>   
@@ -15,14 +25,15 @@ const App = () => {
                   path={ route.path }
                   key={ indexRoute }
                   element={
-                    <route.component/>                  
+                    <route.component 
+                     user={user}
+                     setUser={setAuth}/>                  
                   } />
               })
             }           
             </Routes>
           </React.Suspense>
           <ToastContainer/>
-
         </BrowserRouter>
     )
 }

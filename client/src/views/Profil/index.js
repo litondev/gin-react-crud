@@ -1,15 +1,13 @@
-import { useEffect } from "react";
 import DefaultLayout from "../../layouts/default";
+import { Navigate} from "react-router-dom";
 
-const Profil = () => {
-    useEffect(() => {
-        window.$axios.get("/p").then((res) => {
-            console.log(res);
-        });
-    },[]);
-
+const Profil = (props) => {
+    if(!props.user){
+        return <Navigate to="/signin" />
+    }
+    
     return (
-        <DefaultLayout>
+        <DefaultLayout  {...props}>
             <h1>Profil</h1>
         </DefaultLayout>
     )

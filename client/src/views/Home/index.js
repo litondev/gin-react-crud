@@ -1,8 +1,9 @@
 import DefaultLayout from "../../layouts/default";
 
-const Home = () => {
+const Home = (props) => {
     return (
-        <DefaultLayout>
+        <DefaultLayout
+            {...props}>
             <h1>Home</h1>
         </DefaultLayout>
     )

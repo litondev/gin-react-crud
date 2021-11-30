@@ -17,3 +17,17 @@ window.$toastr = (action,args) => {
 		
 	(action === 'error' ? window.$toast.error(args,options) : window.$toast.success(args,options))
 }
+
+window.$globalErrorToaster = ($toastErr,$err) => {
+	if($err.response && $err.response.status === 422){
+		$toastErr('error',$err.response.data.message || 'Terjadi Kesalahan');
+	}else if($err.response && $err.response.status === 500){
+		$toastErr('error',$err.response.data.message || 'Terjadi Kesalahan');
+	}else if($err.response && $err.response.status === 503){
+		$toastErr('error',"Maintenance");
+	}else if($err.response && $err.response.status === 401){
+		$toastErr('error',$err.response.data.message || 'Terjadi Kesalahan');
+	}else{
+		$toastErr('error','Terjadi Kesalahan');
+	}  
+}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate ,Navigate} from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 
@@ -16,7 +17,9 @@ const SignupSchema = Yup.object()
             .required('Required'),
     });
 
-const Signup = () => {
+const Signup = (props) => {
+    const navigate = useNavigate();
+  
     const [form] = useState({
         name : '',
         email : '', 
@@ -24,10 +27,21 @@ const Signup = () => {
     })
 
     const onSubmit = (values,{setSubmitting}) => {            
-        setTimeout(() => {
-            alert(JSON.stringify(values, null, 2));
-            setSubmitting(false);
-        }, 400);        
+        window.$axios.post("/auth/signup",values)
+        .then(() => {
+            setSubmitting(false)
+            window.$toastr("success","Berhasil Membuat User")
+            navigate('/signin')
+        })
+        .catch(err => {
+            setSubmitting(false)
+            console.log(err)
+            window.$globalErrorToaster(window.$toastr,err)        
+        })            
+    }
+
+    if(props.user){
+        return <Navigate to="/" />
     }
 
     return (
@@ -77,7 +91,7 @@ const Signup = () => {
                             <button 
                                 type="submit" 
                                 disabled={isSubmitting}>
-                                Submit
+                                {isSubmitting ? '...' : 'Submit'}
                             </button>
                             <button type="reset"
                                 onClick={resetForm}>

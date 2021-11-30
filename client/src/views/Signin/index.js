@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate ,Navigate} from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 
@@ -13,25 +14,38 @@ const SigninSchema = Yup.object()
             .required('Required'),
     });
 
-const Signin = () => {
+const Signin = (props) => {
+
+    const navigate = useNavigate();
+
     const [form] = useState({
         email : '', 
         password : ''
     })
 
     const onSubmit = (values,{setSubmitting}) => {            
-        window.$axios.post("/auth/signin",form)
+        window.$axios.post("/auth/signin",values)
         .then(res => {
-            console.log(res)
+            localStorage.setItem('user-token',res.data.access_token);            
+            return window.$axios.get("/me");           
         })
-        .catch(err => {
-            window.$toastr('error','Terjadi Kesalahan');
-            console.log(err)
-        })
-        .finally(()=> {
+        .then(res => {
             setSubmitting(false)
-        })       
+            props.setUser(res.data);
+            window.$toastr("Success","Berhasil Masuk")            
+            navigate('/')
+        })        
+        .catch(err => {         
+            setSubmitting(false)   
+            console.log(err)
+            window.$globalErrorToaster(window.$toastr,err)        
+        })
     }
+
+    if(props.user){
+        return <Navigate to="/" />
+    }
+
     return (
         <div>
             <h1>Signin</h1>
@@ -68,7 +82,7 @@ const Signin = () => {
                             <button 
                                 type="submit" 
                                 disabled={isSubmitting}>
-                                Submit
+                                {isSubmitting ? '...' : 'Submit'}
                             </button>
                             <button type="reset"
                                 onClick={resetForm}>
