@@ -193,6 +193,38 @@ const Data = (props) => {
         })
     }
 
+    const onExport = (type) => {
+        window.$axios({
+            url : "/data/export/"+type,
+        })
+        .then(res => {             
+            var byteString = atob(res.data);
+            var ab = new ArrayBuffer(byteString.length);
+            var ia = new Uint8Array(ab);
+            
+            for (var i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+
+            if(type == "excel"){
+                var blob = new Blob([ab], { type: 'application/wps-office' });            
+            }else{
+                var blob = new Blob([ab], { type: 'application/pdf' });            
+            }
+
+            console.log(res.data);
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.setAttribute('download', 'report.'+ (type == "excel" ? "xlsx" : "pdf"));
+            document.body.appendChild(link);
+            link.click();            
+        })
+        .catch(err => {
+            console.log(err)
+            window.$globalErrorToaster(window.$toastr,err)      
+        })
+    }
+
     useEffect(() => {
         if(data.isLoadPage == false){
             onLoad()                        
@@ -273,6 +305,8 @@ const Data = (props) => {
                     onKeyPress={onSearch}/>
                 <br/>
                 <button onClick={onAdd}>Add</button>
+                <button onClick={() => onExport('pdf')}>ExportPdf</button>
+                <button onClick={() => onExport('excel')}>ExportExcel</button>
             </div>
 
             <table>

@@ -83,8 +83,23 @@ func Logout(c *gin.Context, code int) {
 func Me(c *gin.Context) {
 	claims := jwt.ExtractClaims(c)
 
+	user := map[string]interface{}{}
+
+	database := c.MustGet("DB").(*gorm.DB);	
+
+	queryUser := database.Model(&models.User{})
+		queryUser.Select("name","email","id","photo")
+		queryUser.Where("id = ?",uint(claims["sub"].(float64)))
+		queryUser.First(&user);	
+
+	if user["photo"] == nil {
+		user["photo"] = "http://localhost:8000/assets/users/default.jpeg"
+	}else{
+		user["photo"] = "http://localhost:8000/assets/users/" + *user["photo"].(*string)
+	}
+
 	c.JSON(200, gin.H{
-		"id": uint(claims["sub"].(float64)),
+		"user" : user,
 	})
 	return 
 }

@@ -329,11 +329,8 @@ func ExportPdfData(c *gin.Context){
 	}
         
     encoded := base64.StdEncoding.EncodeToString(content)
-
-	c.JSON(200,gin.H{
-		"message": true,
-		"download": encoded,
-	})
+	fmt.Println(content);
+	c.String(200,encoded)
 	return 
 }
 
@@ -396,11 +393,9 @@ func ExportExcelData(c *gin.Context){
 	}
         
     encoded := base64.StdEncoding.EncodeToString(content)
-    
-	c.JSON(200,gin.H{
-		"message": true,
-		"download": encoded,
-	})
+	fmt.Println(content);
+
+	c.String(200,encoded)
 	return 
 }
 

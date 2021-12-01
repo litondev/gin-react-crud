@@ -17,7 +17,7 @@ const renderApp = (data = false) => {
 if(localStorage.getItem("user-token")){
   window.$axios.get("/me")
   .then(res => {    
-    renderApp(res.data)
+    renderApp(res.data.user)
   })
   .catch(err => {
     localStorage.removeItem("user-token")

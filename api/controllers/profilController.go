@@ -117,7 +117,7 @@ func UpdateProfilPhoto(c *gin.Context){
 		return
 	}
 
-	if(false == (file.Header["Content-Type"][0] != "image/jpeg" || file.Header["Content-Type"][0] != "image/png")){
+	if(false == (file.Header["Content-Type"][0] != "image/jpeg" || file.Header["Content-Type"][0] != "image/png" || file.Header["Content-Type"][0] != "image/jpg")){
 		fmt.Println(file.Header["Content-Type"][0])
 		c.JSON(500, gin.H{
 			"message": "Gambar tidak valid",
