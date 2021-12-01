@@ -26,7 +26,8 @@ window.$globalErrorToaster = ($toastErr,$err) => {
 	}else if($err.response && $err.response.status === 503){
 		$toastErr('error',"Maintenance");
 	}else if($err.response && $err.response.status === 401){
-		$toastErr('error',$err.response.data.message || 'Terjadi Kesalahan');
+		localStorage.removeItem("user-token");
+		window.location = "/signin";
 	}else{
 		$toastErr('error','Terjadi Kesalahan');
 	}  

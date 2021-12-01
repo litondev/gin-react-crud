@@ -225,6 +225,27 @@ const Data = (props) => {
         })
     }
 
+
+    const onSubmitExcel = (event) => {
+        event.preventDefault();
+
+        let formData = new FormData(document.getElementById("upload"))
+        // formData.append("_method","PUT");
+
+        window.$axios.post("/data/import",formData)
+        .then(() => {
+            window.$toastr("success","Berhasil")
+            onLoad()
+        })       
+        .catch(err => {
+            console.log(err)
+            window.$globalErrorToaster(window.$toastr,err) 
+        })
+        .finally(() => {
+            // end loading
+        })
+    }
+
     useEffect(() => {
         if(data.isLoadPage == false){
             onLoad()                        
@@ -248,6 +269,13 @@ const Data = (props) => {
     return (
         <DefaultLayout {...props}>
             <h1>Data</h1>
+
+            <div>
+                <form id="upload">                    
+                    <input type="file" name="excel" id="excel"/>
+                    <button onClick={onSubmitExcel}>Upload</button>
+                </form>
+            </div>
 
             {data.isShowForm && <>
                 <div>
